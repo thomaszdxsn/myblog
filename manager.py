@@ -115,9 +115,6 @@ def main(args):
         start_server(args)
     if getattr(args, 'db_command', None):
         db_operation(args)
-    if getattr(args, 'start_mode'):
-        # 触发服务器启动的函数
-        start_server(args)
 
 
 
