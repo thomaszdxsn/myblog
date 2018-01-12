@@ -1,0 +1,4 @@
+-r common.txt
+
+inflect==0.2.5
+sqlacodegen==1.1.6
