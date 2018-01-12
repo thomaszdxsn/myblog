@@ -103,3 +103,10 @@ class BlogPostModelTestCase(ModelTestMixin, unittest.TestCase):
         c2 = Comment(post=p1, title='comment2', reply=c1)
         self.assertTrue(c2.reply == c1)
         self.assertIn(c2, c1.comment_set)
+
+    def test_post_tag_add(self):
+        p1 = Post(title='post1', slug='post1')
+        t1 = Tag(name='tag1')
+        t2 = Tag(name='tag2')
+        p1.tags.extend([t1, t2])
+        self.assertEqual([t1, t2], p1.tags)

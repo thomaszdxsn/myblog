@@ -5,10 +5,11 @@ from datetime import datetime, timedelta
 from sqlalchemy import (Column, Integer, String, DateTime, ForeignKey,
                         bindparam, Text, Boolean)
 from sqlalchemy.orm import relationship, backref
+from sqlalchemy.ext.associationproxy import association_proxy
 
 from .base import Base, sql_bakery
 
-__all__ = ['Category', 'Image', 'Post', 'Comment']
+__all__ = ['Category', 'Image', 'Post', 'Comment', 'Tag', 'PostTag']
 
 # ========================================================
 # models =================================================
@@ -46,8 +47,28 @@ class Image(Base):
     __tablename__ = 'image'
 
     id = Column(Integer, primary_key=True)
-    title = Column(String(128))
+    key = Column(String(128))
     url = Column(String(256))
+    created_time = Column(DateTime, default=datetime.now)
+
+
+class Tag(Base):
+    __tablename__ = 'tag'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(32), index=True)
+    created_time = Column(DateTime, default=datetime.now)
+
+
+class PostTag(Base):
+    __tablename__ = 'post_tag'
+
+    tag_id = Column(Integer, ForeignKey('tag.id'), primary_key=True)
+    post_id = Column(Integer, ForeignKey('post.id'), primary_key=True)
+    tag = relationship('Tag', lazy='joined')
+
+    def __init__(self, tag):
+        self.tag = tag
 
 
 class Post(Base):
@@ -61,13 +82,19 @@ class Post(Base):
     publish_time = Column(DateTime, default=datetime.now, index=True)
     created_time = Column(DateTime, default=datetime.now)
     modified_time = Column(DateTime, onupdate=datetime.now)
-
     image_id = Column(Integer, ForeignKey('image.id'))
+    category_id = Column(Integer, ForeignKey('category.id'))
+
+    post_tags = relationship(
+        'PostTag',
+        cascade='all, delete-orphan',
+        backref='post'
+    )
+    tags = association_proxy('post_tags', 'tag')
     image = relationship(
         'Image',
         backref='post_set'
     )
-    category_id = Column(Integer, ForeignKey('category.id'))
     category = relationship(
         'Category',
         backref='post_set'
