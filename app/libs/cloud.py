@@ -13,6 +13,10 @@ class QiniuClient(object):
         self.bucket_name = bucket_name
         self.bucket = BucketManager(self.client)
 
+    def set_bucket_name(self, bucket_name):
+        """重设bucketname"""
+        self.bucket_name = bucket_name
+
     def upload_file(self, filename, file_io=None):
         """上传文件
         接受文件名或者IO形式的数据
@@ -46,11 +50,26 @@ class QiniuClient(object):
             return {
                 "error": info.status_code != 200,
                 "exception": info.exception,
-                "hash": result['hash'],
-                "key": result['key']
+                "hash": result.get('hash', None),
+                "key": result.get('key', None)
             }
 
-    def list_file(self, prefix=None, delimiter=None, marker=None, limit=None):
+    def file_delete(self, filename):
+        """删除指定的文件"""
+        try:
+            result, info = self.bucket.delete(self.bucket_name, filename)
+        except Exception as exc:
+            return {
+                'error': True,
+                'exception': str(exc)
+            }
+        else:
+            return {
+                'error': info.status_code != 200,
+                'exception': info.exception
+            }
+
+    def file_list(self, prefix=None, delimiter=None, marker=None, limit=None):
         """获取文件列表，提供了若干选项供筛选文件
 
         :param prefix: 前缀
@@ -60,47 +79,106 @@ class QiniuClient(object):
         :return:
             - error: 是否有错误
             - exception: 错误的原因
+            - items: 文件数据列表
+                - key
+                - hash
+                - fsize
+                - mimeType
+                - putTime
+                - type
+                - status
         """
         try:
-            result = self.bucket.list(
-                self.bucket_name,
-                prefix,
-                marker,
-                limit,
-                delimiter
-            )
+            result, info = self.bucket.list(
+                                self.bucket_name,
+                                prefix,
+                                marker,
+                                limit,
+                                delimiter
+                            )
         except Exception as exc:
             return {
                 'error': True,
                 'exception': str(exc)
             }
-        return result
+        else:
+            return {
+                'error': info.status_code != 200,
+                'exception': info.exception,
+                'items': result.get('items', None)
+            }
 
     def stat_info(self, filename):
-        """获取文件信息"""
-        result = self.bucket.stat(self.bucket_name, filename)
-        return result
+        """获取文件信息
+
+        :return: 同上
+        """
+        try:
+            result, info = self.bucket.stat(self.bucket_name, filename)
+        except Exception as exc:
+            return {
+                'error': True,
+                'exception': str(exc)
+            }
+        return {
+            'error': info.status_code != 200,
+            'exception': info.exception,
+            'fsize': result.get('fsize', None),
+            'hash': result.get('hash', None),
+            'mimeType': result.get("mimeType", None),
+            'putTime': result.get("putTime", None),
+            'type': result.get('type', None)
+        }
 
     def batch_stat(self, filenames):
-        """批量获取文件信息"""
-        ops = build_batch_stat(self.bucket_name, filenames)
-        result = self.bucket.batch(ops)
-        return result
+        """批量获取文件信息
+
+        :return: 同上
+        """
+        try:
+            ops = build_batch_stat(self.bucket_name, filenames)
+            result, info = self.bucket.batch(ops)
+        except Exception as exc:
+            return {
+                'error': True,
+                'exception': str(exc)
+            }
+        else:
+            return {
+                'error': info.status_code != 200,
+                'exception': info.exception,
+                'items': result.get('items', None)
+            }
 
     def batch_delete(self, filenames):
-        ops = build_batch_delete(self.bucket_name, filenames)
-        result = self.bucket.batch(ops)
-        return result
+        """批量删除文件
+        """
+        try:
+            ops = build_batch_delete(self.bucket_name, filenames)
+            result, info = self.bucket.batch(ops)
+        except Exception as exc:
+            return {
+                'error': True,
+                'exception': str(exc)
+            }
+        else:
+            return {
+                'error': info.status_code != 200,
+                'exception': info.exception
+            }
 
     def fetch(self, url, filename):
         """抓去网络资源到空间"""
-        result = self.bucket.fetch(url, self.bucket_name, filename)
-        return result
-
-client = QiniuClient("YGJZitPcvDcFywBpdd822E-Piw5ZGHHmj_SfI3PE",
-                     "fK7u4oXhG-YLRBjkhxgTAclL2V9E3omt50unJmCu",
-                     'myblog')
-
-result = client.list_file()
+        try:
+            result, info = self.bucket.fetch(url, self.bucket_name, filename)
+        except Exception as exc:
+            return {
+                'error': True,
+                'exception': str(exc)
+            }
+        return {
+            'error': info.status_code != 200,
+            'exception': info.exception
+        }
 
 
