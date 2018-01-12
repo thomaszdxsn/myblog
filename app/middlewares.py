@@ -3,10 +3,9 @@
 
 缓存中间件
 """
-import json
 import types
 
-from app.utils import import_object
+from app.libs.utils import import_object
 
 
 class BaseMiddleware(object):

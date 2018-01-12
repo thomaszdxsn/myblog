@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 import unittest
+from datetime import datetime, timedelta
 
 from sqlalchemy import create_engine
-from tornado.testing import AsyncTestCase
 
 from config import TestingConfig
 from app.models import *
@@ -77,3 +77,29 @@ class BlogPostModelTestCase(ModelTestMixin, unittest.TestCase):
         self.db.add(c1)
         self.db.commit()
         self.assertTrue(Category.exists('category1', self.db))
+
+    def test_post_can_own_by_category(self):
+        p1 = Post(title='post1', slug='post1')
+        c1 = Category(name='category1')
+        p1.category = c1
+        self.assertIn(p1, c1.post_set)
+
+    def test_get_published_post(self):
+        self.db.add_all([
+            Post(title='post1', slug='post1', publish_time=datetime.now()),
+            Post(title='post2', slug='post2', publish_time=datetime.now()),
+            Post(
+                title='post3',
+                slug='post3',
+                publish_time=(datetime.now() + timedelta(days=1))
+            )
+        ])
+        self.db.commit()
+        self.assertEqual(Post.get_published_post(self.db).count(), 2)
+
+    def test_comment_can_comment_self(self):
+        p1 = Post(title='post1', slug='post1')
+        c1 = Comment(post=p1, title='comment1')
+        c2 = Comment(post=p1, title='comment2', reply=c1)
+        self.assertTrue(c2.reply == c1)
+        self.assertIn(c2, c1.comment_set)
