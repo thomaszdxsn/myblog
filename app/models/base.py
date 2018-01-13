@@ -29,3 +29,13 @@ def session_context(uri=CommonConfig.SQLALCHEMY_URI):
         session.rollback()
     finally:
         session.close()
+
+
+class ModelAPIMixin(object):
+
+    @classmethod
+    def get_object_list(cls, session):
+        """返回该model的对象列表"""
+        object_list = session.query(cls)
+        return object_list
+

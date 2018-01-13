@@ -14,13 +14,13 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 
-from .base import Base, sql_bakery
+from .base import Base, sql_bakery, ModelAPIMixin
 
 
 __all__ = ['User', 'Role', 'Permission', 'UserRole', 'RolePermission']
 
 
-class User(Base):
+class User(ModelAPIMixin, Base):
     """用户表"""
     __tablename__ = 'user'
 
@@ -62,7 +62,7 @@ class User(Base):
         return self.encrypt_password == encrypt_password
 
     @staticmethod
-    def email_exists(email, session):
+    def exists(email, session):
         """检查该用户邮箱是否已经存在.
 
         这里使用了sqlalchemy.ext.baked.bakery，
@@ -74,6 +74,17 @@ class User(Base):
         exists_query += lambda q: q.filter(User.email == bindparam('email'))
         result = exists_query(session).params(email=email).scalar()
         return result is not None
+
+    @classmethod
+    def get_object_list(cls, session):
+        """返回用户列表
+
+        :return:
+            - id
+            - email
+            - created_time
+        """
+
 
 
 class Role(Base):

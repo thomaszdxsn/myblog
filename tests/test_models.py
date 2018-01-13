@@ -5,22 +5,11 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import create_engine
 
-from config import TestingConfig
 from app.models import *
+from .base import ModelTestMixin
 
 __all__ = ['AuthModelTestCase', 'BlogPostModelTestCase']
-# 测试专用engine
-test_engine = create_engine(TestingConfig.SQLALCHEMY_URI)
 
-
-class ModelTestMixin(object):
-    def setUp(self):
-        Base.metadata.create_all(test_engine)
-        self.db = Session(bind=test_engine)
-
-    def tearDown(self):
-        self.db.close()
-        Base.metadata.drop_all(test_engine)
 
 # ========================================================
 # auth-model testing =====================================
@@ -33,7 +22,7 @@ class AuthModelTestCase(ModelTestMixin, unittest.TestCase):
         u = User(email='user1')
         self.db.add(u)
         self.db.commit()
-        self.assertTrue(User.email_exists('user1', self.db))
+        self.assertTrue(User.exists('user1', self.db))
 
     def test_user_passwd_cant_read(self):
         u = User(email='user1')
