@@ -3,11 +3,14 @@
 
 from ..models import User
 from ..base.handlers import BaseHandler, ListAPIMixin
+from .forms import UserCreateForm
 
 
 class UserListHandler(ListAPIMixin, BaseHandler):
     """用户列表API"""
     model = User
+    fields = ['id', 'email', 'created_time']
+    post_form = UserCreateForm
 
 
 class UserDetailHandler(BaseHandler):

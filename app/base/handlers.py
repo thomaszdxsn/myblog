@@ -3,12 +3,14 @@
 """基础Handler模块
 包括Handler基类`BaseHandler`的定义，以及首页handler等通用页面的handler定义
 """
+import json
 
 from tornado import web, gen
 
 from sqlalchemy import create_engine
 
 from ..libs.paginator import Paginator
+from ..libs.utils import DateEncoder
 from ..middlewares import MiddlewareProcess
 from ..models import Session
 
@@ -47,6 +49,7 @@ class ListAPIMixin(object):
     post_form = None
     unique_field = None
     paginate_by = 50            # TODO: 使用系统配置
+    fields = None
 
     def prepare(self):
         """获取一些参数，进行一些准备工作"""
@@ -57,24 +60,54 @@ class ListAPIMixin(object):
         """根据参数来筛选对象列表，默认进行分页"""
         paginator = Paginator(object_list, self.paginate_by)
         page = paginator.page(self._page)
+        object_list = json.dumps(
+            [obj._asdict() for obj in page.object_list],
+            cls=DateEncoder,
+            ensure_ascii=False
+        )
         return {
-            "object_list": [obj._as_dict() for obj in page.object_list],
+            "object_list": object_list,
             "count": page.paginator.count,
             "total_pages": page.paginator.total_pages,
             "has_prev": page.has_previous(),
-            "has_next": page.has_next()
+            "has_next": page.has_next(),
+            "current_page": self._page
         }
 
     def get(self, *args, **kwargs):
         """获取对象列表"""
         if not self.object_list:
-            self.object_list = self.model.get_object_list(self.db)
+            self.object_list = self.model.get_object_list(self.db, self.fields)
         data = self.handle_object_list(self.object_list)
         self.write(data)
 
     def post(self, *args, **kwargs):
         """新增对象"""
-        pass
+        # 解析json数据
+        try:
+            json_data = json.loads(self.request.body)
+        except json.JSONDecodeError:
+            return self.write_error(400)
+
+        # 表单验证
+        form = self.post_form(data=json_data)
+        if not form.validate():
+            error_msg = {'error': 1}
+            error_msg.update(form.errors)
+            return self.write(error_msg)
+
+        # 唯一性验证
+        if self.unique_field:
+            if self.model.exists(self.unique_field, self.db) is True:
+                error_msg = {
+                    'error': 2,
+                    'msg': 'object exists'
+                }
+                return self.write(error_msg)
+
+        # 创建对象
+        self.model.create(self.db, **form.data)
+        self.write({'error': 0})
 
 
 class DetailAPIMixin(object):

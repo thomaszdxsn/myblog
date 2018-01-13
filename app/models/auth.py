@@ -37,6 +37,14 @@ class User(ModelAPIMixin, Base):
     # 使用sqlalchemy的association_proxy技术
     roles = association_proxy('user_roles', 'role')
 
+    def __init__(self, email, password, roles=None, user_roles=None):
+        self.email = email
+        self.password = str(password)
+        if user_roles:
+            self.user_roles = user_roles
+        if roles:
+            self.roles = roles
+
     # password相关方法, property
     @hybrid_property
     def password(self):
@@ -74,17 +82,6 @@ class User(ModelAPIMixin, Base):
         exists_query += lambda q: q.filter(User.email == bindparam('email'))
         result = exists_query(session).params(email=email).scalar()
         return result is not None
-
-    @classmethod
-    def get_object_list(cls, session):
-        """返回用户列表
-
-        :return:
-            - id
-            - email
-            - created_time
-        """
-
 
 
 class Role(Base):

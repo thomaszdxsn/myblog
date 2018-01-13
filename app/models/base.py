@@ -34,8 +34,17 @@ def session_context(uri=CommonConfig.SQLALCHEMY_URI):
 class ModelAPIMixin(object):
 
     @classmethod
-    def get_object_list(cls, session):
+    def get_object_list(cls, session, field_list=None):
         """返回该model的对象列表"""
-        object_list = session.query(cls)
+        if field_list:
+            fields = [getattr(cls, field) for field in field_list]
+            object_list = session.query(*fields)
+        else:
+            object_list = session.query(cls)
         return object_list
 
+    @classmethod
+    def create(cls, session, **kwargs):
+        obj = cls(**kwargs)
+        session.add(obj)
+        session.commit()

@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
+import json
+import datetime
 
 
 def import_object(name):
@@ -30,3 +32,13 @@ def import_object(name):
         return getattr(obj, parts[-1])
     except AttributeError:
         raise ImportError("No module named %s" % parts[-1])
+
+
+class DateEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.strftime('%Y-%m-%d %H:%M:%S')
+        elif isinstance(obj, datetime.date):
+            return obj.strftime('%Y-%m-%d')
+        else:
+            return super().default(obj)
