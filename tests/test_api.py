@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 import json
+from io import BytesIO
 
-from tornado.testing import AsyncHTTPTestCase, gen_test
-from tornado import gen
+from tornado.testing import AsyncHTTPTestCase
 
 from app.models import *
 from app import create_app
@@ -37,7 +37,7 @@ class APIV1TestCase(ModelTestMixin, AsyncHTTPTestCase):
         self.db.commit()
         data = self.api_fetch(self.reverse_url("api:v1:user:list"))
         self.assertTrue(data['count'] == 2)
-        self.assertIn(json.loads(data['object_list'])[0]['email'],
+        self.assertIn(json.loads(data['object_list'][0])['email'],
                       ['user1', 'user2'])
 
     def test_user_object_list_can_pagination(self):
@@ -354,3 +354,227 @@ class APIV1TestCase(ModelTestMixin, AsyncHTTPTestCase):
         )
         self.assertTrue(data['error'] == 0)
         self.assertTrue(Tag.exists('tag2', self.db))
+
+    def test_post_create_invalid_arg(self):
+        data = self.api_fetch(
+            self.reverse_url("api:v1:post:list"),
+            method='POST',
+            body=json.dumps({"title": "justtitle"})
+        )
+        self.assertTrue(data['error'] != 0)
+        self.assertIn('required', "".join(data['category_id']))
+        self.assertIn("required", "".join(data['slug']))
+
+    def test_post_create_error_by_400_without_arg(self):
+        response = self.fetch(
+            self.reverse_url("api:v1:post:list"),
+            method='POST',
+            body='invalid json'
+        )
+        self.assertEqual(400, response.code)
+
+    def test_post_create_error_by_duplicate_arg(self):
+        c1 = Category(name='category1')
+        p1 = Post(title='post1', slug='post1')
+        p1.category = c1
+        self.db.add(p1)
+        self.db.commit()
+        data = self.api_fetch(
+            self.reverse_url("api:v1:post:list"),
+            method='POST',
+            body=json.dumps({"title": "post1", 'slug': "post1", "category_id":1})
+        )
+        self.assertTrue(data['error'] != 0)
+        self.assertIn('exists', data['msg'])
+
+    def test_post_create_successful(self):
+        c1 = Category(name='category1')
+        self.db.add(c1)
+        self.db.commit()
+        data = self.api_fetch(
+            self.reverse_url("api:v1:post:list"),
+            method='POST',
+            body=json.dumps(
+                {"title": "post1", 'slug': "post1", "category_id": 1})
+        )
+        self.assertTrue(data['error'] == 0)
+
+        obj = Post.get_object_by_id(self.db, 1)
+        self.assertEqual(obj.category, c1)
+        self.assertTrue(obj.title == 'post1')
+
+    def test_post_update_error_400_by_without_arg(self):
+        c1 = Category(name='category1')
+        p1 = Post(title='post1', slug='post1')
+        p1.category = c1
+        self.db.add(p1)
+        self.db.commit()
+        response = self.fetch(
+            self.reverse_url("api:v1:post:detail", 1),
+            method='PUT',
+            body='invalid json'
+        )
+        self.assertEqual(400, response.code)
+
+    def test_post_update_error_404_by_no_obj(self):
+        response = self.fetch(
+            self.reverse_url("api:v1:post:detail", 1),
+            method='PUT',
+            body=json.dumps({
+                'title': 'post1', 'slug': 'slug1', 'category_id': 1
+            })
+        )
+        self.assertEqual(404, response.code)
+
+    def test_post_update_error_by_duplicate_title(self):
+        c1 = Category(name='category1')
+        p1 = Post(title='post1', slug='post1')
+        p2 = Post(title='post2', slug='post2')
+        p1.category = c1
+        p2.category = c1
+        self.db.add_all([p1, p2, c1])
+        self.db.commit()
+        data = self.api_fetch(
+            self.reverse_url("api:v1:post:detail", 1),
+            method='PUT',
+            body=json.dumps({
+                'title': 'post2', 'slug': 'slug1', 'category_id': 1
+            })
+        )
+        self.assertTrue(data['error'] != 0)
+        self.assertIn('exists', data['msg'])
+
+    def test_post_update_successful(self):
+        c1 = Category(name='category1')
+        p1 = Post(title='post1', slug='post1')
+        p1.category = c1
+        self.db.add(p1)
+        self.db.commit()
+        data = self.api_fetch(
+            self.reverse_url("api:v1:post:detail", 1),
+            method='PUT',
+            body=json.dumps({
+                "title": 'post2'
+            })
+        )
+        self.assertTrue(data['error'] == 0)
+        self.assertTrue(Post.exists('post2', self.db))
+
+    def test_delete_error_by_404(self):
+        response = self.fetch(
+            self.reverse_url('api:v1:post:detail', 1),
+            method='DELETE',
+        )
+        self.assertEqual(404, response.code)
+
+    def test_delete_successful(self):
+        c1 = Category(name='category1')
+        p1 = Post(title='post1', slug='post1')
+        p1.category = c1
+        self.db.add(p1)
+        self.db.commit()
+        data = self.api_fetch(
+            self.reverse_url('api:v1:post:detail', 1),
+            method='DELETE',
+        )
+        self.assertTrue(data['error'] == 0)
+        self.assertFalse(Post.exists('post1', self.db))
+
+    def test_create_comment_error_400_by_without_arg(self):
+        response = self.fetch(
+            self.reverse_url("api:v1:comment:list"),
+            method='POST',
+            body='invalid json'
+        )
+        self.assertEqual(400, response.code)
+
+    def test_create_comment_error_by_invalid_arg(self):
+        data = self.api_fetch(
+            self.reverse_url("api:v1:comment:list"),
+            method='POST',
+            body=json.dumps({
+                'notthisarg': 1
+            })
+        )
+        self.assertTrue(data['error'] != 0)
+        self.assertIn('required', "".join(data['post_id']))
+        self.assertIn("required", "".join(data['email']))
+        self.assertIn('required', "".join(data['title']))
+        self.assertIn('required', "".join(data['content']))
+
+    def test_create_comment_successful(self):
+        p1 = Post(title='post1', slug='post1')
+        self.db.add(p1)
+        self.db.commit()
+        data = self.api_fetch(
+            self.reverse_url("api:v1:comment:list"),
+            method='POST',
+            body=json.dumps({
+                "post_id": 1,
+                "email": "example@qq.com",
+                "title": "comment1",
+                "content": "comment1"
+            })
+        )
+        self.assertTrue(data['error'] == 0)
+
+        obj = self.db.query(Comment).get(1)
+        self.assertEqual(obj.title, 'comment1')
+        self.assertIn(obj, p1.comment_set)
+
+    def test_update_comment_fail_400_by_no_arg(self):
+        p1 = Post(title='post1', slug='post1')
+        c1 = Comment(title='post1')
+        c1.post = p1
+        self.db.add(c1)
+        self.db.commit()
+        response = self.fetch(
+            self.reverse_url('api:v1:comment:detail', 1),
+            method='PUT',
+            body='invalid json'
+        )
+        self.assertEqual(400, response.code)
+
+    def test_update_comment_fail_404_by_no_object(self):
+        response = self.fetch(
+            self.reverse_url("api:v1:comment:detail", 1),
+            method='PUT',
+            body='no sense'
+        )
+        self.assertEqual(404, response.code)
+
+    def test_update_comment_successful(self):
+        p1 = Post(title='post1', slug='post1')
+        c1 = Comment(title='post1')
+        c1.post = p1
+        self.db.add(c1)
+        self.db.commit()
+        data = self.api_fetch(
+            self.reverse_url('api:v1:comment:detail', 1),
+            method='PUT',
+            body=json.dumps({"title": "post2"})
+        )
+        self.assertTrue(data['error'] == 0)
+        obj = self.db.query(Comment).get(1)
+        self.assertEqual(obj.title, 'post2')
+
+    def test_delete_comment_fail_404_by_no_object(self):
+        response = self.fetch(
+            self.reverse_url('api:v1:comment:detail', 1),
+            method='DELETE'
+        )
+        self.assertEqual(404, response.code)
+
+    def test_delete_comment_successful(self):
+        p1 = Post(title='post1', slug='post1')
+        c1 = Comment(title='post1')
+        c1.post = p1
+        self.db.add(c1)
+        self.db.commit()
+        data = self.api_fetch(
+            self.reverse_url('api:v1:comment:detail', 1),
+            method='DELETE',
+        )
+        self.assertTrue(data['error'] == 0)
+        obj = self.db.query(Comment).get(1)
+        self.assertEqual(obj, None)

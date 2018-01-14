@@ -60,7 +60,6 @@ class ListAPIMixin(object):
     post_form = None
     unique_field = None
     paginate_by = 50            # TODO: 使用系统配置
-    fields = None
 
     def prepare(self):
         """获取一些参数，进行一些准备工作"""
@@ -71,11 +70,7 @@ class ListAPIMixin(object):
         """根据参数来筛选对象列表，默认进行分页"""
         paginator = Paginator(object_list, self.paginate_by)
         page = paginator.page(self._page)
-        object_list = json.dumps(
-            [obj._asdict() for obj in page.object_list],
-            cls=DateEncoder,
-            ensure_ascii=False
-        )
+        object_list = [obj.to_list_json() for obj in page.object_list]
         return {
             "object_list": object_list,
             "count": page.paginator.count,
@@ -88,7 +83,7 @@ class ListAPIMixin(object):
     def get(self, *args, **kwargs):
         """获取对象列表"""
         if not self.object_list:
-            self.object_list = self.model.get_object_list(self.db, self.fields)
+            self.object_list = self.model.get_object_list(self.db)
         data = self.handle_object_list(self.object_list)
         self.write(data)
 
@@ -132,16 +127,14 @@ class DetailAPIMixin(object):
     model = None
     put_form = None
     unique_field = None
-    fields = None
 
     def get(self, *args, **kwargs):
         """获取对象详情"""
         id_ = kwargs['id']
-        obj = self.model.get_object_by_id(self.db, id_, self.fields)
+        obj = self.model.get_object_by_id(self.db, id_)
         if not obj:
             return self.write_error(404, reason='Not Found')
-        obj_data = json.dumps(obj._asdict(), cls=DateEncoder,
-                              ensure_ascii=False)
+        obj_data = obj.to_detail_json()
         self.write(obj_data)
 
     def put(self, *args, **kwargs):

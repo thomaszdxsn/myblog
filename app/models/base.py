@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
+import json
 import contextlib
 
 from tornado.log import gen_log
@@ -9,6 +10,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.baked import bakery
 
 from config import CommonConfig
+from ..libs.utils import DateEncoder
 
 
 Base = declarative_base()
@@ -42,12 +44,14 @@ class ModelAPIMixin(object):
             object_list = session.query(*fields)
         else:
             object_list = session.query(cls)
+        object_list = object_list.order_by(cls.id.desc())
         return object_list
 
     @classmethod
     def create(cls, session, **kwargs):
         """创建一个对象"""
-        obj = cls(**kwargs)
+        data = {k: v for k, v in kwargs.items() if v is not None}
+        obj = cls(**data)
         session.add(obj)
 
     @classmethod
@@ -69,7 +73,11 @@ class ModelAPIMixin(object):
     def update(cls, session, obj, **kwargs):
         """更新一个对象"""
         for k, v in kwargs.items():
-            setattr(obj, k, v)
+            if v is not None:
+                setattr(obj, k, v)
         session.add(obj)
 
+    @staticmethod
+    def jsonify(data):
+        return json.dumps(data, cls=DateEncoder, ensure_ascii=False)
 

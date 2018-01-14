@@ -99,3 +99,12 @@ class BlogPostModelTestCase(ModelTestMixin, unittest.TestCase):
         t2 = Tag(name='tag2')
         p1.tags.extend([t1, t2])
         self.assertEqual([t1, t2], p1.tags)
+
+    def test_comment_can_automatic_add_floor(self):
+        p1 = Post(title='post1', slug='post1')
+        c1 = Comment(post=p1, title='comment1')
+        c2 = Comment(post=p1, title='comment2', reply=c1)
+        self.db.add(p1)
+        self.db.commit()
+        self.assertEqual(c1.floor, 1)
+        self.assertEqual(c2.floor, 2)

@@ -23,9 +23,27 @@ urlpatterns = [
     (r'/api/v1/category/(?P<id>\d+)', api_v1_handler.CategoryDetailHandler,
      {}, "api:v1:category:detail"),
 
+    # 文章(post)API
+    (r"/api/v1/post", api_v1_handler.PostListHandler,
+     {}, "api:v1:post:list"),
+    (r"/api/v1/post/(?P<id>\d+)", api_v1_handler.PostDetailHandler,
+     {}, "api:v1:post:detail"),
+
+    # 评论API
+    (r"/api/v1/comment", api_v1_handler.CommentListHandler,
+     {}, "api:v1:comment:list"),
+    (r"/api/v1/comment/(?P<id>\d+)", api_v1_handler.CommentDetailHandler,
+     {}, "api:v1:comment:detail"),
+
     # 标签(tag)API
     (r'/api/v1/tag', api_v1_handler.TagListHandler,
      {}, "api:v1:tag:list"),
     (r"/api/v1/tag/(?P<id>\d+)", api_v1_handler.TagDetailHandler,
      {}, "api:v1:tag:detail"),
+
+    # 图片API
+    (r'/api/v1/image', api_v1_handler.ImageListHandler,
+     {}, "api:v1:image:list"),
+    (r"/api/v1/image/(?P<id>\d+)", api_v1_handler.ImageDetailHandler,
+     {}, "api:v1:image:detail"),
 ]

@@ -83,6 +83,17 @@ class User(ModelAPIMixin, Base):
         result = exists_query(session).params(email=email).scalar()
         return result is not None
 
+    def to_list_json(self):
+        data = {
+            'id': self.id,
+            'email': self.email,
+            'created_time': self.created_time
+        }
+        return self.jsonify(data)
+
+    def to_detail_json(self):
+        return self.to_list_json()
+
 
 class Role(Base):
     """角色表"""

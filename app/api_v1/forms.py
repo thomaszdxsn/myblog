@@ -3,7 +3,7 @@
 import datetime
 
 from wtforms import (StringField, PasswordField, IntegerField, TextAreaField,
-                     DateTimeField)
+                     DateTimeField, FileField)
 from wtforms.validators import DataRequired, Email, Regexp
 from wtforms_tornado import Form
 
@@ -48,6 +48,10 @@ class PostCreateForm(Form):
         'title',
         validators=[DataRequired()]
     )
+    slug = StringField(
+        'slug',
+        validators=[DataRequired()]
+    )
     content = TextAreaField(
         'content'
     )
@@ -56,7 +60,7 @@ class PostCreateForm(Form):
     )
     publish_time = DateTimeField(
         'publish_time',
-        validators=[DateTimeField()],
+        validators=[DataRequired()],
         default=datetime.datetime.now()
     )
 
@@ -83,8 +87,55 @@ class PostUpdateForm(Form):
     )
 
 
+class CommentCreateForm(Form):
+    post_id = IntegerField(
+        'post_id',
+        validators=[DataRequired()]
+    )
+    email = StringField(
+        'email',
+        validators=[DataRequired()]
+    )
+    title = StringField(
+        'title',
+        validators=[DataRequired()]
+    )
+    content = TextAreaField(
+        'content',
+        validators=[DataRequired()]
+    )
+    reply_id = IntegerField(
+        'reply_id'
+    )
+
+
+class CommentUpdateForm(Form):
+    post_id = IntegerField(
+        'post_id',
+    )
+    email = StringField(
+        'email',
+    )
+    title = StringField(
+        'title',
+    )
+    content = TextAreaField(
+        'content',
+    )
+    reply_id = IntegerField(
+        'reply_id'
+    )
+
+
 class TagForm(Form):
     name = StringField(
         'name',
+        validators=[DataRequired()]
+    )
+
+
+class ImageCreateForm(Form):
+    file = FileField(
+        'file',
         validators=[DataRequired()]
     )

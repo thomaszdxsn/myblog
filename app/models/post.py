@@ -6,6 +6,7 @@ from sqlalchemy import (Column, Integer, String, DateTime, ForeignKey,
                         bindparam, Text, Boolean)
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.ext.orderinglist import ordering_list
 
 from .base import Base, sql_bakery, ModelAPIMixin
 
@@ -42,11 +43,32 @@ class Category(ModelAPIMixin, Base):
         result = exists_query(session).params(name=name).scalar()
         return result is not None
 
+    def to_list_json(self):
+        data = {
+            "id": self.id,
+            "name": self.name,
+            "parent_id": self.parent_id,
+            "parent": self.parent.name,
+            "created_time": self.created_time
+        }
+        return self.jsonify(data)
 
-class Image(Base):
+    def to_detail_json(self):
+        data = {
+            "id": self.id,
+            "name": self.name,
+            "parent_id": self.parent_id,
+            "parent": self.parent.name,
+            "created_time": self.created_time
+        }
+        return self.jsonify(data)
+
+
+class Image(ModelAPIMixin, Base):
     __tablename__ = 'image'
 
     id = Column(Integer, primary_key=True)
+    name = Column(String(64), index=True)
     key = Column(String(128))
     url = Column(String(256))
     created_time = Column(DateTime, default=datetime.now)
@@ -66,6 +88,17 @@ class Tag(ModelAPIMixin, Base):
         result = baked_query(session).params(name=name).scalar()
         return result is not None
 
+    def to_list_json(self):
+        data = {
+            'id': self.id,
+            'name': self.name,
+            'created_time': self.created_time
+        }
+        return self.jsonify(data)
+
+    def to_detail_json(self):
+        return self.to_list_json()
+
 
 class PostTag(Base):
     __tablename__ = 'post_tag'
@@ -78,14 +111,14 @@ class PostTag(Base):
         self.tag = tag
 
 
-class Post(Base):
+class Post(ModelAPIMixin, Base):
     __tablename__ = 'post'
 
     id = Column(Integer, primary_key=True)
     title = Column(String(64), index=True, nullable=False)
     slug = Column(String(128), nullable=False)
     content = Column(Text)
-    status = Column(Boolean)
+    status = Column(Boolean, default=True)
     publish_time = Column(DateTime, default=datetime.now, index=True)
     created_time = Column(DateTime, default=datetime.now)
     modified_time = Column(DateTime, onupdate=datetime.now)
@@ -118,8 +151,43 @@ class Post(Base):
         )
         return result
 
+    @staticmethod
+    def exists(title, session):
+        baked_query = sql_bakery(lambda  session: session.query(Post.id))
+        baked_query += lambda q: q.filter(
+            Post.title == bindparam('title')
+        )
+        result = baked_query(session).params(title=title).scalar()
+        return result is not None
 
-class Comment(Base):
+    def to_list_json(self):
+        data = {
+            'id': self.id,
+            'title': self.title,
+            'slug': self.slug,
+            'status': self.status,
+            'image': self.image.url,
+            'category': self.category.name,
+            'publish_time': self.publish_time
+        }
+        return self.jsonify(data)
+
+    def to_detail_json(self):
+        data = {
+            'id': self.id,
+            'title': self.title,
+            'slug': self.slug,
+            'status': self.status,
+            'image': self.image.url,
+            'category': self.category.name,
+            'publish_time': self.publish_time,
+            'created_time': self.created_time,
+            'modified_time': self.modified_time
+        }
+        return self.jsonify(data)
+
+
+class Comment(ModelAPIMixin, Base):
     __tablename__ = 'comment'
 
     id = Column(Integer, primary_key=True)
@@ -127,7 +195,7 @@ class Comment(Base):
     title = Column(String(128))
     content = Column(Text)
     floor = Column(Integer)
-    status = Column(Boolean)
+    status = Column(Boolean, default=True)
 
     # 关联post
     post_id = Column(Integer, ForeignKey('post.id'), nullable=False)
@@ -135,7 +203,8 @@ class Comment(Base):
         'Post',
         cascade='all',
         backref=backref('comment_set',
-                        lazy='dynamic'),
+                        order_by='Comment.floor',
+                        collection_class=ordering_list('floor', count_from=1)),
     )
     # 回复的comment
     reply_id = Column(Integer, ForeignKey('comment.id'), nullable=True)
