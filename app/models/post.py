@@ -7,7 +7,7 @@ from sqlalchemy import (Column, Integer, String, DateTime, ForeignKey,
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.associationproxy import association_proxy
 
-from .base import Base, sql_bakery
+from .base import Base, sql_bakery, ModelAPIMixin
 
 __all__ = ['Category', 'Image', 'Post', 'Comment', 'Tag', 'PostTag']
 
@@ -16,7 +16,7 @@ __all__ = ['Category', 'Image', 'Post', 'Comment', 'Tag', 'PostTag']
 # ========================================================
 
 
-class Category(Base):
+class Category(ModelAPIMixin, Base):
     __tablename__ = 'category'
 
     id = Column(Integer, primary_key=True)
@@ -52,12 +52,19 @@ class Image(Base):
     created_time = Column(DateTime, default=datetime.now)
 
 
-class Tag(Base):
+class Tag(ModelAPIMixin, Base):
     __tablename__ = 'tag'
 
     id = Column(Integer, primary_key=True)
     name = Column(String(32), index=True)
     created_time = Column(DateTime, default=datetime.now)
+
+    @classmethod
+    def exists(cls, name, session):
+        baked_query = sql_bakery(lambda session: session.query(Tag.id))
+        baked_query += lambda q: q.filter(Tag.name == bindparam('name'))
+        result = baked_query(session).params(name=name).scalar()
+        return result is not None
 
 
 class PostTag(Base):

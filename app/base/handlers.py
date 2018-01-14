@@ -6,6 +6,7 @@
 import json
 
 from tornado import web, gen
+from tornado.httpclient import HTTPError
 
 from sqlalchemy import create_engine
 
@@ -25,6 +26,11 @@ class BaseHandler(web.RequestHandler):
             self._db = Session(bind=create_engine(self.config.SQLALCHEMY_URI))
         return self._db
 
+    def write_error(self, status_code, **kwargs):
+        """重写write_error()，现在可以自动加上状态码转化了"""
+        self.set_status(status_code)
+        super().write_error(status_code, **kwargs)
+
     def prepare(self):
         # web中间件的prepare处理
         self._middleware_list = self.config.MIDDLEWARES
@@ -35,7 +41,12 @@ class BaseHandler(web.RequestHandler):
         MiddlewareProcess.on_finish(self, self._middleware_list)
         # clean工作
         if self._db:
-            self._db.close()
+            try:
+                self._db.commit()
+            except:
+                self._db.rollback()
+            finally:
+                self._db.close()
 
     @property
     def config(self):
@@ -98,10 +109,16 @@ class ListAPIMixin(object):
 
         # 唯一性验证
         if self.unique_field:
-            if self.model.exists(self.unique_field, self.db) is True:
+            if self.model.exists(
+                form.data[self.unique_field],
+                self.db
+            )is True:
                 error_msg = {
                     'error': 2,
-                    'msg': 'object exists'
+                    'msg': '{field}:{value} exists'.format(
+                        field=self.unique_field,
+                        value=form.data[self.unique_field]
+                    )
                 }
                 return self.write(error_msg)
 
@@ -115,18 +132,67 @@ class DetailAPIMixin(object):
     model = None
     put_form = None
     unique_field = None
+    fields = None
 
     def get(self, *args, **kwargs):
         """获取对象详情"""
-        pass
+        id_ = kwargs['id']
+        obj = self.model.get_object_by_id(self.db, id_, self.fields)
+        if not obj:
+            return self.write_error(404, reason='Not Found')
+        obj_data = json.dumps(obj._asdict(), cls=DateEncoder,
+                              ensure_ascii=False)
+        self.write(obj_data)
 
     def put(self, *args, **kwargs):
         """更新该对象"""
-        pass
+        id_ = kwargs['id']
+        obj = self.model.get_object_by_id(self.db, id_)
+        if not obj:
+            return self.write_error(404, reason='Not Found')
+
+        # 解析JSON数据
+        try:
+            json_data = json.loads(self.request.body)
+        except json.JSONDecodeError:
+            return self.write_error(400)
+        # 处理表单验证
+        form = self.put_form(data=json_data)
+        if not form.validate():
+            error_msg = {
+                'error': 1,
+            }
+            error_msg.update(form.errors)
+            return self.write(error_msg)
+        # 唯一性验证
+        if self.unique_field:
+            if getattr(obj, self.unique_field) != \
+                    form.data[self.unique_field]:
+                if self.model.exists(
+                    form.data[self.unique_field],
+                    self.db
+                ):
+                    error_msg = {
+                        'error': 2,
+                        'msg': '{field}:{value} exists'.format(
+                            field=self.unique_field,
+                            value=form.data[self.unique_field]
+                        )
+                    }
+                    return self.write(error_msg)
+
+        # 更新操作
+        self.model.update(self.db, obj, **form.data)
+        return self.write({'error': 0})
 
     def delete(self, *args, **kwargs):
         """删除该对象"""
-        pass
+        id_ = kwargs['id']
+        obj = self.model.get_object_by_id(self.db, id_)
+        if not obj:
+            return self.write_error(404, reason='Not Found')
+        self.model.delete(self.db, obj)
+        self.write({'error': 0})
 
 
 class HomePageHandler(BaseHandler):

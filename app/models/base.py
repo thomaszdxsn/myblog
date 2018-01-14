@@ -32,6 +32,7 @@ def session_context(uri=CommonConfig.SQLALCHEMY_URI):
 
 
 class ModelAPIMixin(object):
+    """这个mixin为model提供操作方法，包括常见的增删查改..."""
 
     @classmethod
     def get_object_list(cls, session, field_list=None):
@@ -45,6 +46,30 @@ class ModelAPIMixin(object):
 
     @classmethod
     def create(cls, session, **kwargs):
+        """创建一个对象"""
         obj = cls(**kwargs)
         session.add(obj)
-        session.commit()
+
+    @classmethod
+    def get_object_by_id(cls, session, id, field_list=None):
+        """根据id来获取对象"""
+        if field_list:
+            fields = [getattr(cls, field) for field in field_list]
+            obj = session.query(*fields).filter_by(id=id).one_or_none()
+        else:
+            obj = session.query(cls).get(id)
+        return obj
+
+    @classmethod
+    def delete(cls, session, obj):
+        """删除一个对象，注意传入对象而不是id"""
+        session.delete(obj)
+
+    @classmethod
+    def update(cls, session, obj, **kwargs):
+        """更新一个对象"""
+        for k, v in kwargs.items():
+            setattr(obj, k, v)
+        session.add(obj)
+
+

@@ -19,29 +19,29 @@ __all__ = ['AuthModelTestCase', 'BlogPostModelTestCase']
 class AuthModelTestCase(ModelTestMixin, unittest.TestCase):
 
     def test_user_email_check_duplicate(self):
-        u = User(email='user1')
+        u = User(email='user1', password=123)
         self.db.add(u)
         self.db.commit()
         self.assertTrue(User.exists('user1', self.db))
 
     def test_user_passwd_cant_read(self):
-        u = User(email='user1')
+        u = User(email='user1', password=123)
         with self.assertRaises(AttributeError):
             u.password
 
     def test_user_passwd_generate_hash_and_salt(self):
-        u = User(email='user1')
+        u = User(email='user1', password=123)
         u.password = 'password'
         self.assertTrue(u.salt is not None)
         self.assertTrue(u.encrypt_password is not None)
 
     def test_user_passwd_can_verify(self):
-        u = User(email='user1')
+        u = User(email='user1', password=123)
         u.password = 'password'
         self.assertTrue(u.verify_password('password'))
 
     def test_user_create_role_relationship(self):
-        u = User(email='user1')
+        u = User(email='user1', password=123)
         r = Role(name='role1')
         u.roles.append(r)
         self.assertIn(r, u.roles)
