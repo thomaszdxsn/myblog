@@ -119,6 +119,7 @@ class ListAPIMixin(object):
 
         # 创建对象
         self.model.create(self.db, **form.data)
+        self.set_status(201)
         self.write({'error': 0})
 
 
@@ -176,6 +177,7 @@ class DetailAPIMixin(object):
 
         # 更新操作
         self.model.update(self.db, obj, **form.data)
+        self.set_status(201)
         return self.write({'error': 0})
 
     def delete(self, *args, **kwargs):
@@ -185,6 +187,7 @@ class DetailAPIMixin(object):
         if not obj:
             return self.write_error(404, reason='Not Found')
         self.model.delete(self.db, obj)
+        self.set_status(204)
         self.write({'error': 0})
 
 
