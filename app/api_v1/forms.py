@@ -19,6 +19,18 @@ class UserCreateForm(Form):
     )
 
 
+class UserLoginForm(Form):
+    email = StringField(
+        'email',
+        validators=[DataRequired(), Email()],
+    )
+    password = PasswordField(
+        'password',
+        validators=[DataRequired(), Regexp(r'^[a-zA-Z]\w{7,31}$')]
+    )
+
+
+
 class UserUpdateForm(Form):
     email = StringField(
         'email',
@@ -139,3 +151,4 @@ class ImageCreateForm(Form):
         'file',
         validators=[DataRequired()]
     )
+

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>admin login</title>
+    <link rel="stylesheet" href="{{ static_url('vendor/font-awesome/css/fontawesome-all.min.css') }}">
+    <link rel="stylesheet" href="{{ static_url('css/styles.css') }}">
+    <link rel="stylesheet" href="{{ static_url('vendor/simple-line-icons/css/simple-line-icons.css') }}">
+</head>
+<body>
+<div class="page-wrapper flex-row align-items-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-5">
+                <div class="card p-4">
+                    <div class="card-header text-center text-uppercase h4 font-weight-light">
+                        Login
+                    </div>
+                    <form method="post">
+                        <div class="card-body py-5">
+                            <div class="form-group">
+                                <label class="form-control-label">邮箱</label>
+                                <input type="email" class="form-control" name="email">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-control-label">密码</label>
+                                <input type="password" class="form-control" name="password">
+                            </div>
+                        </div>
+
+                        <div class="card-footer">
+                            {% if errors %}
+                            <div class="error-message">
+                                {{ errors }}
+                            </div>
+                            {% end %}
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary px-5">登入</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="{{ static_url('vendor/jquery/jquery.min.js') }}"></script>
+<script src="{{ static_url('vendor/popper.js/popper.min.js') }}"></script>
+<script src="{{ static_url('vendor/bootstrap/js/bootstrap.min.js') }}"></script>
+<script src="{{ static_url('vendor/chart.js/chart.min.js') }}"></script>
+<script src="{{ static_url('js/carbon.js') }}"></script>
+<script src="{{ static_url('js/demo.js') }}"></script>
+</body>
+</html>

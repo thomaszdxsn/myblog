@@ -4,6 +4,7 @@
 
 import argparse
 import os
+import getpass
 
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
@@ -11,16 +12,28 @@ from tornado.options import parse_command_line
 
 from app import create_app
 from config import config_dict
+from app.models import session_context, User
 
 
 parser = argparse.ArgumentParser()
 sub_parser = parser.add_subparsers(help='subcommands')
 
+# 用户相关命令
+user_parser = sub_parser.add_parser(
+    'user',
+    help='user commands'
+)
+user_parser.add_argument(
+    'user_command',
+    choices=('createsuperuser',),
+    help='user command include createsuperuser...'
+)
+
 # 服务器启动的子命令
 server_parser = sub_parser.add_parser(
     'start',
     help='about server start, include "dev|test|prod" start mode, '
-         'default is dev mode'
+         'default is dev mode',
 )
 server_parser.add_argument(
     '-m', '--start-mode',
@@ -109,12 +122,26 @@ def start_server(args):
     IOLoop.current().start()
 
 
+def create_superuser():
+    """创建草鸡用户"""
+    email = input("输入你的邮箱: ")
+    password = getpass.getpass('输入你的密码: ')
+    with session_context() as session:
+        user = User(email=email, password=password, is_superuser=True)
+        session.add(user)
+    print("创建成功")
+
+
 def main(args):
     if getattr(args, 'start_mode', None):
         # 触发服务器启动的函数
         start_server(args)
     if getattr(args, 'db_command', None):
         db_operation(args)
+    if getattr(args, 'user_command', None):
+        if args.user_command == 'createsuperuser':
+            create_superuser()
+
 
 
 

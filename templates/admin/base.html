@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}admin{% end %}</title>
+    <link rel="stylesheet" href="{{ static_url('vendor/simple-line-icons/css/simple-line-icons.css') }}">
+    <link rel="stylesheet" href="{{ static_url('vendor/font-awesome/css/fontawesome-all.min.css') }}">
+    <link rel="stylesheet" href="{{ static_url('css/styles.css') }}">
+    {% block head %}{% end %}
+</head>
+<body   >
+<div class="page-wrapper">
+    <nav class="navbar page-header">
+        <a href="#" class="btn btn-link sidebar-mobile-toggle d-md-none mr-auto">
+            <i class="fa fa-bars"></i>
+        </a>
+
+        <a class="navbar-brand" href="#">
+            博客后台管理
+        </a>
+
+        <a href="#" class="btn btn-link sidebar-toggle d-md-down-none">
+            <i class="fa fa-bars"></i>
+        </a>
+
+        <a href="{{ reverse_url('admin:logout') }}">
+            <i class="fa fa-locks"></i>
+            登出
+        </a>
+    </nav>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <nav class="sidebar-nav">
+                <ul class="nav">
+                    <li class="nav-title">博客管理</li>
+
+                    <li class="nav-item">
+                        <a href="{{ reverse_url('admin:category:list') }}"
+                           class="nav-link {% if section == 'category' %}active{% end %}">
+                            <i class="icon icon-grid"></i>分类
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="{{ reverse_url('admin:post:list') }}"
+                           class="nav-link {% if section == 'post' %}active{% end %}">
+                            <i class="icon icon-grid"></i>文章
+                        </a>
+                    </li>
+
+
+
+                </ul>
+            </nav>
+        </div>
+
+        {% block content %}{% end %}
+    </div>
+</div>
+<script src="{{ static_url('vendor/jquery/jquery.min.js') }}"></script>
+<script src="{{ static_url('vendor/popper.js/popper.min.js') }}"></script>
+<script src="{{ static_url('vendor/bootstrap/js/bootstrap.min.js') }}"></script>
+<script src="{{ static_url('vendor/chart.js/chart.min.js') }}"></script>
+<script src="{{ static_url('js/carbon.js') }}"></script>
+<script src="{{ static_url('js/demo.js') }}"></script>
+{% block js %}{% end %}
+</body>
+</html>

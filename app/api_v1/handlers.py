@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
+import json
 
 from ..models import User, Post, Category, Tag, Image, Comment
 from ..base.handlers import BaseHandler, ListAPIMixin, DetailAPIMixin
 from .forms import (UserCreateForm, UserUpdateForm, CategoryForm,
                     PostCreateForm, PostUpdateForm, TagForm,
-                    ImageCreateForm, CommentCreateForm, CommentUpdateForm)
+                    ImageCreateForm, CommentCreateForm, CommentUpdateForm,
+                    UserLoginForm)
 
 __all__ = ['UserListHandler', 'UserDetailHandler', 'CategoryListHandler',
-           'CategoryDetailHandler', 'TagListHandler', 'TagDetailHandler']
-# TODO: 在对User修改时需要权限验证
+           'CategoryDetailHandler', 'TagListHandler', 'TagDetailHandler',
+           'SessionIDHandler']
+# TODO: 加入一些权限的验证
 
 
 class UserListHandler(ListAPIMixin, BaseHandler):
@@ -87,3 +90,61 @@ class ImageDetailHandler(DetailAPIMixin, BaseHandler):
     model = Image
 
 
+class SessionIDHandler(BaseHandler):
+    """获取session_id，用户必须登录"""
+
+    def get(self, *args, **kwargs):
+        """以登录用户可以直接获取"""
+        if not self.current_user:
+            return self.write_error(401)
+        self.write({
+            'session_id': self.session._id
+        })
+
+    def post(self, *args, **kwargs):
+        """需要用户登录来下发一个新的session_id"""
+        # TODO: 加入一些登录次数限制的功能
+        try:
+            json_data = json.loads(self.request.body)
+        except json.JSONDecodeError:
+            return self.write_error(400)
+
+        form = UserLoginForm(data=json_data)
+        if not form.validate():
+            error_msg = {"error": 1}
+            error_msg.update(form.errors)
+            return self.write(error_msg)
+
+        if User.exists(form.email.data, self.db) is False:
+            error_msg = {
+                'error': 2,
+                'msg': 'email or password error'    # 错误信息不能明确对方该邮箱不存在
+            }
+            return self.write(error_msg)
+
+        user_obj = self.db.query(User).filter(
+            User.email == form.email.data
+        ).one()
+        if user_obj.verify_password(form.password.data) is False:
+            error_msg = {
+                'error': 2,
+                'msg': 'email or password error'
+            }
+            return self.write(error_msg)
+
+        # session_id创建成功
+        self.session.user_id = user_obj.id
+        self.set_status(201)
+        self.write({"error": 0})
+
+    def put(self):
+        if not self.current_user:
+            return self.write_error(401)
+        self.session.init_session()
+        self.set_status(201)
+
+    def delete(self):
+        if not self.current_user:
+            return self.write_error(401)
+        self.session.logout()
+        self.set_status(204)

@@ -9,7 +9,7 @@ import hashlib
 from datetime import datetime
 
 from sqlalchemy import (Column, Integer, String, DateTime, ForeignKey,
-                        bindparam)
+                        bindparam, Boolean)
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -28,8 +28,7 @@ class User(ModelAPIMixin, Base):
     email = Column(String(32), index=True, nullable=False, unique=True)
     encrypt_password = Column(String(64))
     salt = Column(String(8))
-    created_time = Column(DateTime, default=datetime.now)
-    modified_time = Column(DateTime, onupdate=datetime.now)
+    is_superuser = Column(Boolean, default=False)
 
     user_roles = relationship('UserRole',
                               cascade='all, delete-orphan',
@@ -37,13 +36,10 @@ class User(ModelAPIMixin, Base):
     # 使用sqlalchemy的association_proxy技术
     roles = association_proxy('user_roles', 'role')
 
-    def __init__(self, email, password, roles=None, user_roles=None):
+    def __init__(self, email, password, is_superuser=False):
         self.email = email
         self.password = str(password)
-        if user_roles:
-            self.user_roles = user_roles
-        if roles:
-            self.roles = roles
+        self.is_superuser = is_superuser
 
     # password相关方法, property
     @hybrid_property
@@ -83,6 +79,18 @@ class User(ModelAPIMixin, Base):
         result = exists_query(session).params(email=email).scalar()
         return result is not None
 
+    @classmethod
+    def get_object_by_email(cls, session, email):
+        """根据email来查找用户对象"""
+        baked_query = sql_bakery(
+            lambda session: session.query(User)
+        )
+        baked_query += lambda q: q.filter(
+            User.email == bindparam('email')
+        )
+        obj = baked_query(session).params(email=email).one_or_none()
+        return obj
+
     def to_list_json(self):
         data = {
             'id': self.id,
@@ -102,8 +110,6 @@ class Role(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(32), index=True, nullable=False)
     description = Column(String(512))
-    created_time = Column(DateTime, default=datetime.now)
-    modified_time = Column(DateTime, onupdate=datetime.now)
 
     role_permissions = relationship('RolePermission',
                                     cascade='all,delete-orphan',
@@ -116,7 +122,6 @@ class UserRole(Base):
 
     user_id = Column(Integer, ForeignKey('user.id'), primary_key=True)
     role_id = Column(Integer, ForeignKey('role.id'), primary_key=True)
-    created_time = Column(DateTime, default=datetime.now)
 
     role = relationship(Role, lazy='joined')
 
@@ -132,8 +137,6 @@ class Permission(Base):
     name = Column(String(32), index=True, nullable=False)
     operate = Column(String(16), index=True)
     description = Column(String(512))
-    created_time = Column(DateTime, default=datetime.now)
-    modified_time = Column(DateTime, onupdate=datetime.now)
 
 
 class RolePermission(Base):
@@ -142,7 +145,6 @@ class RolePermission(Base):
     role_id = Column(Integer, ForeignKey('role.id'), primary_key=True)
     permission_id = Column(Integer, ForeignKey('permission.id'),
                            primary_key=True)
-    created_time = Column(DateTime, default=datetime.now)
 
     permission = relationship(Permission, lazy='joined')
 

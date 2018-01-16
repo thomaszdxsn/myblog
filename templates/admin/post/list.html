@@ -1,0 +1,88 @@
+{% extends "../base.html" %}
+
+{% block content %}
+<div class="container">
+<div class="card">
+    <div class="card-header bg-light">
+        文章
+        <a class="btn btn-primary btn-link"
+           style="margin-left:15px;"
+           href="{{ reverse_url('admin:post:create') }}">
+            创建新的文章
+        </a>
+    </div>
+
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>文章标题</th>
+                    <th>分类名称</th>
+                    <th>文章状态</th>
+                    <th>创建时间</th>
+                    <th>修改时间</th>
+                    <th>X</th>
+                </tr>
+                </thead>
+                <tbody>
+                    {% for obj in data['object_list'] %}
+                    <tr>
+                        <td>{{ obj.id }}</td>
+                        <td>
+                            <a href="{{ reverse_url('admin:post:detail', obj.id) }}">
+                            {{ obj.title }}
+                            </a>
+                        </td>
+                        <td>{{ obj.category.name }}</td>
+                        <td>{{ obj.status }}</td>
+                        <td>{{ obj.created_time }}</td>
+                        <td>{{ obj.modified_time }}</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm record-delete">
+                                X
+                            </button>
+                        </td>
+                    </tr>
+                    {% end %}
+                </tbody>
+            </table>
+
+            <div class="card-footer">
+                <ul class="pagination">
+                    <li class="page-item {% if not data['has_prev'] %}disabled{% end %}">
+                        <a href="?page={{ data['current_page'] - 1 }}" class="page-link">上一页</a>
+                    </li>
+                    <li class="page-item active">
+                        <a class="page-link">
+                            {{ data['current_page'] }}/{{ data['total_pages'] }}
+                        </a>
+                    </li>
+                    <li class="page-item {% if not data['has_next'] %}disabled{% end %}">
+                        <a href="?page={{ data['current_page'] + 1 }}" class="page-link">下一页</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% end %}
+
+{% block js %}
+<script>
+$(".record-delete").on("click", function(e) {
+   let id_elem = $(this).parent().parent().children()[0];
+   let api = `{{ reverse_url('admin:post:list') }}/${id_elem.innerHTML.trim()}`;
+   if (!confirm("确定删除?")) return;
+   $.ajax({
+        url: api,
+        method: 'DELETE',
+        success(data, status) {
+            $($(id_elem).parent()).fadeOut(250)
+        }
+   })
+})
+</script>
+{% end %}

@@ -6,25 +6,54 @@
 import json
 
 from tornado import web, gen
-from tornado.httpclient import HTTPError
 
 from sqlalchemy import create_engine
 
+import redis
+
 from ..libs.paginator import Paginator
-from ..libs.utils import DateEncoder
 from ..middlewares import MiddlewareProcess
-from ..models import Session
+from ..models import Session as DBSession
+from ..models import User
+from ..models.sys_config import SysConfig
+from ..session import Session
 
 
 class BaseHandler(web.RequestHandler):
     """Handler的基类"""
     _db = None
+    _redis_cli = None
+    _session = None
+
+    @property
+    def session(self):
+        if self._session is None:
+            self._session = Session(self)
+        return self._session
 
     @property
     def db(self):
         if self._db is None:
-            self._db = Session(bind=create_engine(self.config.SQLALCHEMY_URI))
+            self._db = DBSession(bind=create_engine(self.config.SQLALCHEMY_URI,
+                                                    pool_size=500,
+                                                    pool_recycle=3600))
         return self._db
+
+    @property
+    def redis_cli(self):
+        if self._redis_cli is None:
+            self._redis_cli = redis.StrictRedis(
+                host=self.config.REDIS_HOST,
+                port=self.config.REDIS_PORT,
+                password=self.config.REDIS_PASSWORD
+            )
+        return self._redis_cli
+
+    def get_current_user(self):
+        if self.session.user_id:
+            self.session.init_session()         # 保持登入状态
+            return User.get_object_by_id(self.db,
+                                         self.session.user_id)
 
     def write_error(self, status_code, **kwargs):
         """重写write_error()，现在可以自动加上状态码转化了"""
@@ -38,12 +67,19 @@ class BaseHandler(web.RequestHandler):
 
     def on_finish(self):
         # web中间件的on_finish处理
-        MiddlewareProcess.on_finish(self, self._middleware_list)
+        try:
+            MiddlewareProcess.on_finish(self, self._middleware_list)
+        except AttributeError:
+            # 有可能没有设定middleware_list
+            pass
         # clean工作
         if self._db:
             try:
                 self._db.commit()
-            except:
+            except Exception as e:
+                self.application.logger.error(
+                    "database error", exc_info=True
+                )
                 self._db.rollback()
             finally:
                 self._db.close()
@@ -52,6 +88,27 @@ class BaseHandler(web.RequestHandler):
     def config(self):
         return self.application.settings['config']
 
+    def handle_object_list(self, object_list, page_num, to_json=False):
+        """根据参数来筛选对象列表，默认进行分页"""
+        paginator = Paginator(
+            object_list,
+            int(SysConfig.get(SysConfig.per_page['key'],
+                          SysConfig.per_page['default']))
+        )
+        page = paginator.page(page_num)
+        if to_json:
+            object_list = [obj.to_list_json() for obj in page.object_list]
+        else:
+            object_list = page.object_list
+        return {
+            "object_list": object_list,
+            "count": page.paginator.count,
+            "total_pages": page.paginator.total_pages,
+            "has_prev": page.has_previous(),
+            "has_next": page.has_next(),
+            "current_page": page_num
+        }
+
 
 class ListAPIMixin(object):
     """列表API接口的mixin"""
@@ -59,32 +116,20 @@ class ListAPIMixin(object):
     object_list = None
     post_form = None
     unique_field = None
-    paginate_by = 50            # TODO: 使用系统配置
 
     def prepare(self):
         """获取一些参数，进行一些准备工作"""
+        if not self.current_user:
+            return self.write_error(401)
         super().prepare()
         self._page = int(self.get_query_argument('page', 1))
-
-    def handle_object_list(self, object_list):
-        """根据参数来筛选对象列表，默认进行分页"""
-        paginator = Paginator(object_list, self.paginate_by)
-        page = paginator.page(self._page)
-        object_list = [obj.to_list_json() for obj in page.object_list]
-        return {
-            "object_list": object_list,
-            "count": page.paginator.count,
-            "total_pages": page.paginator.total_pages,
-            "has_prev": page.has_previous(),
-            "has_next": page.has_next(),
-            "current_page": self._page
-        }
 
     def get(self, *args, **kwargs):
         """获取对象列表"""
         if not self.object_list:
             self.object_list = self.model.get_object_list(self.db)
-        data = self.handle_object_list(self.object_list)
+        data = self.handle_object_list(self.object_list, self._page,
+                                       to_json=True)
         self.write(data)
 
     def post(self, *args, **kwargs):
@@ -128,6 +173,11 @@ class DetailAPIMixin(object):
     model = None
     put_form = None
     unique_field = None
+
+    def prepare(self):
+        if not self.current_user:
+            return self.write_error(401)
+        super().prepare()
 
     def get(self, *args, **kwargs):
         """获取对象详情"""
@@ -188,7 +238,6 @@ class DetailAPIMixin(object):
             return self.write_error(404, reason='Not Found')
         self.model.delete(self.db, obj)
         self.set_status(204)
-        self.write({'error': 0})
 
 
 class HomePageHandler(BaseHandler):

@@ -22,8 +22,6 @@ class Category(ModelAPIMixin, Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(36), index=True, nullable=False, unique=True)
-    created_time = Column(DateTime, default=datetime.now)
-    modified_time = Column(DateTime, onupdate=datetime.now)
 
     parent_id = Column(Integer, ForeignKey('category.id'))
     children = relationship(
@@ -48,7 +46,7 @@ class Category(ModelAPIMixin, Base):
             "id": self.id,
             "name": self.name,
             "parent_id": self.parent_id,
-            "parent": self.parent.name,
+            "parent": self.parent.name if self.parent else None,
             "created_time": self.created_time
         }
         return self.jsonify(data)
@@ -71,7 +69,6 @@ class Image(ModelAPIMixin, Base):
     name = Column(String(64), index=True)
     key = Column(String(128))
     url = Column(String(256))
-    created_time = Column(DateTime, default=datetime.now)
 
 
 class Tag(ModelAPIMixin, Base):
@@ -79,7 +76,6 @@ class Tag(ModelAPIMixin, Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(32), index=True)
-    created_time = Column(DateTime, default=datetime.now)
 
     @classmethod
     def exists(cls, name, session):
@@ -87,6 +83,22 @@ class Tag(ModelAPIMixin, Base):
         baked_query += lambda q: q.filter(Tag.name == bindparam('name'))
         result = baked_query(session).params(name=name).scalar()
         return result is not None
+
+    @classmethod
+    def create_by_string(cls, session, string, sep=','):
+        """通过解析一个`tag1,tag2,tag3`的字符串来创建若干Tag对象"""
+        tag_list = []
+        tag_str_list = string.split(sep)
+        for tag_str in tag_str_list:
+            tag_str = tag_str.strip()
+            obj = session.query(Tag).filter(
+                Tag.name == tag_str
+            ).one_or_none()
+            if obj is None:
+                obj = Tag(name=tag_str)
+            tag_list.append(obj)
+        return tag_list
+
 
     def to_list_json(self):
         data = {
@@ -117,11 +129,12 @@ class Post(ModelAPIMixin, Base):
     id = Column(Integer, primary_key=True)
     title = Column(String(64), index=True, nullable=False)
     slug = Column(String(128), nullable=False)
+    meta_description = Column(String(128))
+    meta_keywords = Column(String(128))
+    brief = Column(String(512))
     content = Column(Text)
     status = Column(Boolean, default=True)
     publish_time = Column(DateTime, default=datetime.now, index=True)
-    created_time = Column(DateTime, default=datetime.now)
-    modified_time = Column(DateTime, onupdate=datetime.now)
     image_id = Column(Integer, ForeignKey('image.id'))
     category_id = Column(Integer, ForeignKey('category.id'))
 
@@ -137,7 +150,8 @@ class Post(ModelAPIMixin, Base):
     )
     category = relationship(
         'Category',
-        backref='post_set'
+        backref=backref('post_set',
+                        lazy='dynamic')
     )
 
     @staticmethod
@@ -202,9 +216,11 @@ class Comment(ModelAPIMixin, Base):
     post = relationship(
         'Post',
         cascade='all',
-        backref=backref('comment_set',
-                        order_by='Comment.floor',
-                        collection_class=ordering_list('floor', count_from=1)),
+        backref=backref(
+            'comment_set',
+            order_by='Comment.floor',
+            collection_class=ordering_list('floor', count_from=1)
+        ),
     )
     # 回复的comment
     reply_id = Column(Integer, ForeignKey('comment.id'), nullable=True)

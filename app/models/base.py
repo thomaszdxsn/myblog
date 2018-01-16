@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 import json
 import contextlib
+import datetime
 
 from tornado.log import gen_log
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, Column, DateTime, Integer
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.baked import bakery
@@ -13,7 +14,15 @@ from config import CommonConfig
 from ..libs.utils import DateEncoder
 
 
-Base = declarative_base()
+class BaseCls(object):
+    created_time = Column(DateTime, default=datetime.datetime.now)
+    modified_time = Column(DateTime,
+                           onupdate=datetime.datetime.now,
+                           default=datetime.datetime.now)
+
+
+Base = declarative_base(cls=BaseCls)        # 继承了2个时间字段的Base
+NativeBase = declarative_base()             # 原生Base
 metadata = Base.metadata
 Session = sessionmaker()
 sql_bakery = bakery()
@@ -22,9 +31,9 @@ sql_bakery = bakery()
 @contextlib.contextmanager
 def session_context(uri=CommonConfig.SQLALCHEMY_URI):
     engine = create_engine(uri)
+    session = Session(bind=engine)
+    yield session
     try:
-        session = Session(engine)
-        yield session
         session.commit()
     except:
         gen_log.error('session_context() commit error', exc_info=True)
@@ -53,6 +62,7 @@ class ModelAPIMixin(object):
         data = {k: v for k, v in kwargs.items() if v is not None}
         obj = cls(**data)
         session.add(obj)
+        return obj
 
     @classmethod
     def get_object_by_id(cls, session, id, field_list=None):
@@ -70,10 +80,15 @@ class ModelAPIMixin(object):
         session.delete(obj)
 
     @classmethod
-    def update(cls, session, obj, **kwargs):
-        """更新一个对象"""
+    def update(cls, session, obj, patch=True, **kwargs):
+        """更新一个对象, patch允许部分更新"""
         for k, v in kwargs.items():
-            if v is not None:
+            if patch:
+                # TODO: wtforms有个问题，对于没有输入的值仍然会带有None值，
+                # TODO: 所以暂时使用这个办法
+                if v is not None:
+                    setattr(obj, k, v)
+            else:
                 setattr(obj, k, v)
         session.add(obj)
 
