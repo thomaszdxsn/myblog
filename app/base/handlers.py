@@ -10,12 +10,12 @@ from tornado.concurrent import futures
 
 from sqlalchemy import create_engine
 
-import redis
-
 from ..libs.paginator import Paginator
+from ..libs.utils import import_object
 from ..middlewares import MiddlewareProcess
 from ..models import Session as DBSession
 from ..models import User
+from ..models.base import redis_cli
 from ..models.sys_config import SysConfig
 from ..session import Session
 
@@ -27,6 +27,18 @@ class BaseHandler(web.RequestHandler):
     _session = None
     _thread_pool = None
     _process_pool = None
+    _cache_client = None
+
+    @property
+    def cache_client(self):
+        if not self._cache_client:
+            try:
+                client_backend = self.config.\
+                    MIDDLEWARES['app.middlewares.CacheMiddleware']['cache']
+                self._cache_client = import_object(client_backend)
+            except KeyError:
+                raise KeyError("Not provide cache middleware")
+        return self._cache_client
 
     @property
     def thread_pool(self):
@@ -57,11 +69,7 @@ class BaseHandler(web.RequestHandler):
     @property
     def redis_cli(self):
         if self._redis_cli is None:
-            self._redis_cli = redis.StrictRedis(
-                host=self.config.REDIS_HOST,
-                port=self.config.REDIS_PORT,
-                password=self.config.REDIS_PASSWORD
-            )
+            self._redis_cli = redis_cli
         return self._redis_cli
 
     def get_current_user(self):

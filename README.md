@@ -1,5 +1,10 @@
 # myblog
 
+下面是各个模块的介绍，它们都位于`app/`文件夹之下.
+
+## BLOG -- 博客
+
+
 ## ADMIN -- 网站的后台
 
 ### PATCH
@@ -31,6 +36,10 @@ uri: `/api/v1/<resource>/(<id>)*`
 ### Generic
 
 - 加入用户注册和权限管理
+
+### BLOG
+
+- 记录在线人数，使用websocket来实现(每个页面都连接相同的ws接口).
 
 ### ADMIN
 

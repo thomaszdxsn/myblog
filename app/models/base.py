@@ -3,6 +3,8 @@
 import json
 import contextlib
 import datetime
+import redis
+
 
 from tornado.log import gen_log
 from sqlalchemy import create_engine, Column, DateTime, Integer
@@ -21,11 +23,17 @@ class BaseCls(object):
                            default=datetime.datetime.now)
 
 
+# 各种要多次使用的客户端，基类
 Base = declarative_base(cls=BaseCls)        # 继承了2个时间字段的Base
 NativeBase = declarative_base()             # 原生Base
 metadata = Base.metadata
 Session = sessionmaker()
 sql_bakery = bakery()
+redis_cli = redis.StrictRedis(
+    host=CommonConfig.REDIS_HOST,
+    port=CommonConfig.REDIS_PORT,
+    password=CommonConfig.REDIS_PASSWORD
+)
 
 
 @contextlib.contextmanager

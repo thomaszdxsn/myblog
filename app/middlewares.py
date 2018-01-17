@@ -36,8 +36,7 @@ class CacheMiddleware(BaseMiddleware):
     """缓存中间件"""
 
     def __init__(self, handler, cache,
-                 no_get_flush=True,
-                 host=None, port=None, password=None, **kwargs):
+                 no_get_flush=True):
         """初始化缓存配置
 
         :param handler: RequestHandler的实例
@@ -59,17 +58,7 @@ class CacheMiddleware(BaseMiddleware):
         self.handler = handler
         self.no_get_flush = no_get_flush
         self.request = handler.request
-
-        # cache后端的实例化
-        cache_class = import_object(cache)
-        cache_kwds = {}
-        if host:
-            cache_kwds['host'] = host
-        if port:
-            cache_kwds['port'] = port
-        if password:
-            cache_kwds['password'] = password
-        self.cache = cache_class(**cache_kwds)
+        self.cache = import_object(cache)
 
     def before_request(self):
         """在请求刚到达时的缓存策略处理流程
@@ -107,11 +96,7 @@ class CacheMiddleware(BaseMiddleware):
                         chunk = b"".join(self._write_buffer)
                         this.cache.set(
                             redis_key, chunk,
-                            expire=SysConfig.get(
-                                SysConfig.cache_expire['key'],
-                                default=SysConfig.cache_expire['default'],
-                                type_=SysConfig.cache_expire['type']
-                            )
+                            expire=SysConfig.get(**SysConfig.cache_expire)
                         )
                     super(self.__class__, self).flush(*args, **kwargs)
                 this.handler.flush = types.MethodType(_flush, this.handler)
@@ -124,13 +109,13 @@ class MiddlewareProcess(object):
     def prepare(handler, middleware_dicts):
         """嵌入到`prepare()`的处理流程中"""
         for middleware, kwds in middleware_dicts.items():
-            if 'cache' in middleware.lower():
-                if SysConfig.get(**SysConfig.cache_enable) is False:
-                    middleware.cache.flush_all()
-                    # 没有开启缓存，跳过缓存中间件
-                    continue
             middleware_cls = import_object(middleware)
             middleware_obj = middleware_cls(handler, **kwds)
+            if 'cache' in middleware.lower():
+                if SysConfig.get(**SysConfig.cache_enable) is False:
+                    # 没有开启缓存，跳过缓存中间件
+                    middleware_obj.cache.flush_all()
+                    continue
             try:
                 middleware_obj.before_request()
             except NotImplemented:

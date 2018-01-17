@@ -29,7 +29,6 @@ urlpatterns = [
      admin_handers.CategoryCreateHandler,
      {}, "admin:category:create"),
 
-
     # 后台文章管理
     (r"/fake-admin/post", admin_handers.PostListHandler,
      {}, "admin:post:list"),
@@ -39,6 +38,14 @@ urlpatterns = [
     (r"/fake-admin/post/create",
      admin_handers.PostCreateHandler,
      {}, "admin:post:create"),
+
+    # 后台图片管理
+    (r"/fake-admin/image", admin_handers.ImageListHandler,
+     {}, "admin:image:list"),
+    (r"/fake-admin/image/(?P<id>\d+)", admin_handers.ImageDetailHandler,
+     {}, "admin:image:detail"),
+    (r"/fake-admin/image/create", admin_handers.ImageCreateHandler,
+     {}, "admin:image:create"),
 
     # 后台系统配置
     (r"/fake-admin/sys-config", admin_handers.SysConfigHandler,

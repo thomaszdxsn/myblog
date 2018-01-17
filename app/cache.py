@@ -3,7 +3,7 @@
 
 使用redis|memcache|...实现web应用的缓存组件
 """
-import redis
+from .models.base import redis_cli
 
 
 class BaseCache(object):
@@ -11,68 +11,74 @@ class BaseCache(object):
     __slots__ = ['client']
     key = 'cache'   # 为了键名的唯一性，加入一个前缀
 
-    def get(self, key, default=None):
+    @classmethod
+    def get(cls, key, default=None):
         """获取缓存资源"""
         raise NotImplemented
 
-    def set(self, key, value, expire=None):
+    @classmethod
+    def set(cls, key, value, expire=None):
         """设置缓存资源"""
         raise NotImplemented
 
-    def delete(self, key):
+    @classmethod
+    def delete(cls, key):
         """删除缓存资源"""
         raise NotImplemented
 
-    def exists(self, key):
+    @classmethod
+    def exists(cls, key):
         raise NotImplemented
 
-    def expire(self, key, seconds):
+    @classmethod
+    def expire(cls, key, seconds):
         """设置缓存过期时间"""
         raise NotImplemented
 
-    def flush_all(self):
+    @classmethod
+    def flush_all(cls):
         """刷新所有缓存"""
         raise NotImplemented
 
 
 class RedisCache(BaseCache):
     """Redis实现的缓存组件"""
-    # TODO: 可使用元类来生成client，而不用每次都实例化这个类
+    client = redis_cli
 
-    def __init__(self, host="localhost", port=6379, password=None):
-        self.client = redis.StrictRedis(host, port,
-                                        password=password,
-                                        decode_responses=True)
-
-    def get(self, key, default=None):               # TODO: 删除debugging信息
-        cache_key = "{0}:{1}".format(self.key, key)
-        value = self.client.get(cache_key)
-        print("cache get key{} content:{}".format(key, value))
+    @classmethod
+    def get(cls, key, default=None):
+        cache_key = "{0}:{1}".format(cls.key, key)
+        value = cls.client.get(cache_key)
         if not value:
             return default
         return value
 
-    def set(self, key, value, expire=None):
-        print("cache set key{} content:{}".format(key, value))
-        cache_key = "{0}:{1}".format(self.key, key)
-        self.client.set(cache_key, value)
+    @classmethod
+    def set(cls, key, value, expire=None):
+        cache_key = "{0}:{1}".format(cls.key, key)
+        cls.client.set(cache_key, value)
         if expire:
-            self.expire(key, expire)
+            cls.expire(key, expire)
 
-    def delete(self, key):
-        cache_key = "{0}:{1}".format(self.key, key)
-        self.client.delete(cache_key)
+    @classmethod
+    def delete(cls, key):
+        cache_key = "{0}:{1}".format(cls.key, key)
+        cls.client.delete(cache_key)
 
-    def exists(self, key):
-        cache_key = "{0}:{1}".format(self.key, key)
-        print("cache exists key{} {}".format(key, self.client.exists(cache_key)))
-        return self.client.exists(cache_key)
+    @classmethod
+    def exists(cls, key):
+        cache_key = "{0}:{1}".format(cls.key, key)
+        return cls.client.exists(cache_key)
 
-    def expire(self, key, seconds):
-        cache_key = "{0}:{1}".format(self.key, key)
-        self.client.expire(cache_key, seconds)
+    @classmethod
+    def expire(cls, key, seconds):
+        cache_key = "{0}:{1}".format(cls.key, key)
+        cls.client.expire(cache_key, seconds)
 
-    def flush_all(self):
-        self.client.delete(*self.client.keys("http*"))
+    @classmethod
+    def flush_all(cls):
+        keys = cls.client.keys("http*")
+        if keys:
+            cls.client.delete(*keys)
 
 

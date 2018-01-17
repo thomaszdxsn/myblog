@@ -492,4 +492,57 @@ class SysConfigHandler(BaseHandler):
 
         for key, value in form.data.items():
             SysConfig.set(key, value, type=type(value))
+        # 清空缓存
+        self.cache_client.flush_all()
         self.redirect("admin:sys-config")
+
+
+class ImageListHandler(BaseHandler):
+    """图片列表"""
+    _section = 'image'
+
+    def prepare(self):
+        super(ImageListHandler, self).prepare()
+        self._page = self.get_query_argument('page', 1)
+
+    @web.authenticated
+    def get(self, *args, **kwargs):
+        object_list = Image.get_object_list(self.db)
+        data = self.handle_object_list(object_list, self._page)
+        self.render(
+            'admin/image/list.html',
+            section=self._section,
+            data=data
+        )
+
+
+class ImageCreateHandler(BaseHandler):
+    """图片创建"""
+    _section = 'image'
+
+    @web.authenticated
+    def get(self, *args, **kwargs):
+        pass
+
+    @gen.coroutine
+    @web.authenticated
+    def post(self, *args, **kwargs):
+        pass
+
+
+class ImageDetailHandler(BaseHandler):
+    """图片详情"""
+    _section = 'image'
+
+    @web.authenticated
+    def get(self, *args, **kwargs):
+        pass
+
+    @gen.coroutine
+    @web.authenticated
+    def post(self, *args, **kwargs):
+        pass
+
+    @web.authenticated
+    def delete(self, *args, **kwargs):
+        pass

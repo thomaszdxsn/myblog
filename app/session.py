@@ -8,7 +8,7 @@ from app.models.sys_config import SysConfig
 
 
 class Session(object):
-    _prefix = 'session:'
+    _prefix = '_session:'
     _id = None
     _skip = ['_redis', '_handler', '_id']
 
