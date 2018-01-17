@@ -5,7 +5,8 @@
 """
 import json
 
-from tornado import web, gen
+from tornado import web
+from tornado.concurrent import futures
 
 from sqlalchemy import create_engine
 
@@ -24,6 +25,20 @@ class BaseHandler(web.RequestHandler):
     _db = None
     _redis_cli = None
     _session = None
+    _thread_pool = None
+    _process_pool = None
+
+    @property
+    def thread_pool(self):
+        if self._thread_pool is None:
+            self._thread_pool = futures.ThreadPoolExecutor()
+        return self._thread_pool
+
+    @property
+    def process_pool(self):
+        if self._process_pool is None:
+            self._process_pool = futures.ProcessPoolExecutor()
+        return self._process_pool
 
     @property
     def session(self):

@@ -70,6 +70,12 @@ class Image(ModelAPIMixin, Base):
     key = Column(String(128))
     url = Column(String(256))
 
+    def thumbnail(self, width, height):
+        """七牛云的缩略图功能"""
+        return self.url + "?imageMogr2/thumbnail/{0}x{1}".format(
+            width, height
+        )
+
 
 class Tag(ModelAPIMixin, Base):
     __tablename__ = 'tag'
@@ -98,7 +104,6 @@ class Tag(ModelAPIMixin, Base):
                 obj = Tag(name=tag_str)
             tag_list.append(obj)
         return tag_list
-
 
     def to_list_json(self):
         data = {
@@ -167,12 +172,39 @@ class Post(ModelAPIMixin, Base):
 
     @staticmethod
     def exists(title, session):
+        """根据标题判断文章是否存在"""
         baked_query = sql_bakery(lambda  session: session.query(Post.id))
         baked_query += lambda q: q.filter(
             Post.title == bindparam('title')
         )
         result = baked_query(session).params(title=title).scalar()
         return result is not None
+
+    @staticmethod
+    def slug_exists(slug, session):
+        """判断slug是否存在"""
+        baked_query = sql_bakery(lambda session: session.query(Post.id))
+        baked_query += lambda q: q.filter(
+            Post.slug == bindparam('slug')
+        )
+        result = baked_query(session).params(slug=slug).scalar()
+        return result is not None
+
+    @classmethod
+    def create(cls, session, **kwargs):
+        """创建Post对象，但是会判断slug是非存在再自动为它追加后缀，防止重复"""
+        raw_slug = kwargs.pop('slug')
+        slug = raw_slug
+        index = 1
+        while True:
+            if cls.slug_exists(slug, session):
+                slug = raw_slug + "-" + str(index)
+                index += 1
+            else:
+                slug = raw_slug
+                break
+        obj = cls(slug=slug, **kwargs)
+        return obj
 
     def to_list_json(self):
         data = {
@@ -219,7 +251,8 @@ class Comment(ModelAPIMixin, Base):
         backref=backref(
             'comment_set',
             order_by='Comment.floor',
-            collection_class=ordering_list('floor', count_from=1)
+            collection_class=ordering_list('floor', count_from=1),
+            lazy='dynamic'
         ),
     )
     # 回复的comment

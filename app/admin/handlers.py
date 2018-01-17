@@ -4,7 +4,7 @@ import uuid
 from urllib.parse import urljoin
 from io import BytesIO
 
-from tornado import web
+from tornado import web, gen
 
 from .forms import LoginForm, CategoryForm, PostForm
 from ..base.handlers import BaseHandler
@@ -226,6 +226,7 @@ class PostCreateHandler(BaseHandler):
             form=form
         )
 
+    @gen.coroutine
     @web.authenticated
     def post(self, *args, **kwargs):
         category_list = Category.get_object_list(self.db)
@@ -247,7 +248,7 @@ class PostCreateHandler(BaseHandler):
                 form=form,
                 errors=error_string
             )
-        if self.request.files['image']:
+        if self.request.files.get('image', None):
             # 判断文件类型是否为图片
             file_info = self.request.files['image'][0]
             if 'image' not in file_info['content_type']:
@@ -269,7 +270,10 @@ class PostCreateHandler(BaseHandler):
                 self.config.QINIU_SECRET_KEY,
                 self.config.QINIU_BUCKET_NAME
             )
-            upload_result = qiniu_client.upload_file(image_key, file_io)
+            # 使用线程池进行非堵塞上传
+            upload_result = yield self.thread_pool.submit(
+                qiniu_client.upload_file, image_key, file_io
+            )
             if upload_result['error'] is True:
                 error_string = '图片上传失败'
                 self.application.logger.error(
@@ -305,7 +309,8 @@ class PostCreateHandler(BaseHandler):
         )
         if tags:
             post_obj.tags = tags
-        post_obj.image = form.image.data
+        if isinstance(form.image.data, Image):
+            post_obj.image = form.image.data
         self.db.add(post_obj)
         self.redirect(self.reverse_url("admin:post:list"), permanent=True)
 
@@ -316,12 +321,139 @@ class PostDetailHandler(BaseHandler):
 
     @web.authenticated
     def get(self, *args, **kwargs):
-        pass
+        obj = Post.get_object_by_id(self.db, kwargs['id'])
+        if not obj:
+            return self.write_error(404)
+        category_list = Category.get_object_list(self.db)
+        form = PostForm(data=obj.__dict__)
+        form.category_id.choices = [(obj.id, obj.name)
+                                    for obj in category_list]
+        self.render(
+            "admin/post/edit.html",
+            section=self._section,
+            form=form,
+            errors=None,
+            obj=obj
+        )
 
+    @gen.coroutine
     @web.authenticated
     def post(self, *args, **kwargs):
-        pass
+        # 判断对象是否存在
+        obj = Post.get_object_by_id(self.db, kwargs['id'])
+        if not obj:
+            return self.write_error(404)
+
+        # 验证表单
+        category_list = Category.get_object_list(self.db)
+        form = PostForm(self.request.arguments)
+        form.category_id.choices = [(obj.id, obj.name) for obj in category_list]
+        if not form.validate():
+            return self.render(
+                "admin/post/create.html",
+                section=self._section,
+                form=form,
+                errors=None,
+                obj=obj
+            )
+        # 判断标题是否已经使用
+        if obj.title != form.title.data:
+            if Post.exists(form.title.data, self.db):
+                error_string = '文章标题: {} 已经被使用'.format(form.title.data)
+                return self.render(
+                    "admin/post/edit.html",
+                    section=self._section,
+                    form=form,
+                    errors=error_string,
+                    obj=obj
+                )
+        # 查询slug是否已经被使用
+        # create()有自动处理，但是update()暂定需要修改，所以放在这里处理
+        if obj.slug != form.slug.data:
+            slug = form.slug.data
+            slug_index = 1
+            while True:
+                if Post.slug_exists(slug, self.db):
+                    slug = form.slug.data + "-" + str(slug_index)
+                    slug_index += 1
+                else:
+                    form.slug.data = slug
+                    break
+        # 图片文件的处理
+        if self.request.files.get('image', None):
+            # 判断文件类型是否为图片
+            file_info = self.request.files['image'][0]
+            if 'image' not in file_info['content_type']:
+                error_string = '图片: 格式不正确，请传入正确的图片格式'.format(
+                    form.title.data
+                )
+                return self.render(
+                    "admin/post/edit.html",
+                    section=self._section,
+                    form=form,
+                    errors=error_string,
+                    obj=obj
+                )
+
+            # 上传图片
+            image_key = str(uuid.uuid4())
+            file_io = BytesIO(file_info['body'])
+            qiniu_client = QiniuClient(
+                self.config.QINIU_ACCESS_KEY,
+                self.config.QINIU_SECRET_KEY,
+                self.config.QINIU_BUCKET_NAME
+            )
+            # 使用线程池进行非堵塞上传
+            upload_result = yield self.thread_pool.submit(
+                qiniu_client.upload_file, image_key, file_io
+            )
+            if upload_result['error'] is True:
+                error_string = '图片上传失败'
+                self.application.logger.error(
+                    "图片上传失败：{}".format(upload_result['exception'])
+                )
+                return self.render(
+                    "admin/post/edit.html",
+                    section=self._section,
+                    form=form,
+                    errors=error_string,
+                    obj=obj
+                )
+            image_obj = Image.create(
+                self.db,
+                key=image_key,
+                name=file_info['filename'],
+                url=urljoin(self.config.QINIU_DOMAIN, image_key)
+            )
+            form.image.data = image_obj  # 共享一个变量，可以应对没有上传图片的情况
+
+        # 处理标签
+        tags = Tag.create_by_string(self.db, form.tags.data)
+        Post.update(
+            self.db,
+            obj,
+            patch=False,
+            category_id=form.category_id.data,
+            title=form.title.data,
+            slug=form.slug.data,
+            brief=form.brief.data,
+            meta_description=form.meta_description.data,
+            meta_keywords=form.meta_keywords.data,
+            status=form.status.data,
+            publish_time=form.publish_time.data,
+            content=form.content.data
+        )
+        if tags:
+            obj.tags = tags
+        if isinstance(form.image.data, Image):     # 暂不能删除文章的图片
+            obj.image = form.image.data
+        self.db.add(obj)
+        self.redirect(self.reverse_url("admin:post:list"), permanent=True)
 
     @web.authenticated
     def delete(self, *args, **kwargs):
-        pass
+        obj = Post.get_object_by_id(self.db, kwargs['id'])
+        if not obj:
+            return self.write_error(404)
+        Post.delete(self.db, obj)
+        self.set_status(204)

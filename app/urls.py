@@ -31,7 +31,7 @@ urlpatterns = [
 
 
     # 后台文章管理
-    (r"/fake-admin/post/list", admin_handers.PostListHandler,
+    (r"/fake-admin/post", admin_handers.PostListHandler,
      {}, "admin:post:list"),
     (r"/fake-admin/post/(?P<id>\d+)",
      admin_handers.PostDetailHandler,
