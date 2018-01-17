@@ -95,7 +95,7 @@ class PostForm(Form):
 
 class SysConfigForm(Form):
     session_expire = IntegerField(
-        "session过期时间",
+        "session过期时间(单位:秒)",
         validators=[DataRequired()]
     )
     per_page = IntegerField(
@@ -106,7 +106,7 @@ class SysConfigForm(Form):
         "是否开启缓存",
     )
     cache_expire = IntegerField(
-        "缓存过期时间",
+        "缓存过期时间(单位:秒)",
     )
 
 

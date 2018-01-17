@@ -461,6 +461,7 @@ class PostDetailHandler(BaseHandler):
 
 
 class SysConfigHandler(BaseHandler):
+    """系统配置"""
     _section = 'sys-config'
 
     @web.authenticated
