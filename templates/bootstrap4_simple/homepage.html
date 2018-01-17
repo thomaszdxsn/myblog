@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-COMPATIBLE" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Title</title>
+</head>
+<body>
+    {% for category_obj in category_data %}
+        {% if not category_obj.parent %}
+            {{ category_obj.name }}
+        {% end %}
+    {% end %}
+</body>
+</html>

@@ -30,7 +30,7 @@
             {% end %}
             <div class="form-group">
                 <p class="form-control-plaintext">ID: {{ obj.id }}</p>
-                <p class="form-control-plaintext">评论数量: {{ obj.comment_set.count() }}</p>
+                <p class="form-control-plaintext">评论数量: {{ len(obj.comment_set) }}</p>
                 <p class="form-control-plaintext">创建时间: {{ obj.created_time }}</p>
                 <p class="form-control-plaintext">修改时间: {{ obj.modified_time }}</p>
             </div>

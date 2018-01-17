@@ -94,12 +94,16 @@ class PostForm(Form):
 
 
 class SysConfigForm(Form):
-    session_expire = IntegerField(
-        "session过期时间(单位:秒)",
-        validators=[DataRequired()]
+    template_version = SelectField(
+        "模版版本",
+        choices=[('bootstrap4_simple', 'bootstrap4简单版本')]
     )
     per_page = IntegerField(
-        "分页时每页的条目数量",
+        "分页时每页的条目数量(后台和API)",
+        validators=[DataRequired()]
+    )
+    blog_per_page = IntegerField(
+        "博客中每页显示的条目数量",
         validators=[DataRequired()]
     )
     cache_enable = BooleanField(
@@ -107,6 +111,10 @@ class SysConfigForm(Form):
     )
     cache_expire = IntegerField(
         "缓存过期时间(单位:秒)",
+    )
+    session_expire = IntegerField(
+        "session过期时间(单位:秒)",
+        validators=[DataRequired()]
     )
 
 

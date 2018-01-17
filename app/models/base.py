@@ -15,6 +15,9 @@ from sqlalchemy.ext.baked import bakery
 from config import CommonConfig
 from ..libs.utils import DateEncoder
 
+__all__ = ['redis_cli', 'Base', 'NativeBase', 'Session', 'session_context',
+           'ModelAPIMixin']
+
 
 class BaseCls(object):
     created_time = Column(DateTime, default=datetime.datetime.now)
@@ -32,7 +35,8 @@ sql_bakery = bakery()
 redis_cli = redis.StrictRedis(
     host=CommonConfig.REDIS_HOST,
     port=CommonConfig.REDIS_PORT,
-    password=CommonConfig.REDIS_PASSWORD
+    password=CommonConfig.REDIS_PASSWORD,
+    decode_responses=True
 )
 
 

@@ -1,54 +1,57 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from .base import handlers as base_handlers
 from .api_v1 import handlers as api_v1_handlers
-from .admin import handlers as admin_handers
+from .admin import handlers as admin_handlers
+from .blog import handlers as blog_handlers
 
 urlpatterns = [
+    # 博客页面
+    
     # 首页
-    (r'/', base_handlers.HomePageHandler,
+    (r"/", blog_handlers.HomepageHandler,
      {}, "homepage"),
+    
 
     # 后台页面
-    
+
     # 后台登入/登出页面
-    (r'/fake-admin/login', admin_handers.AdminLoginHandler,
+    (r'/fake-admin/login', admin_handlers.AdminLoginHandler,
      {}, "admin:login"),
-    (r'/fake-admin/logout', admin_handers.AdminLogoutHandler,
+    (r'/fake-admin/logout', admin_handlers.AdminLogoutHandler,
      {}, "admin:logout"),
 
     # 后台文章分类管理
     (r"/fake-admin/category",
-     admin_handers.CategoryListHandler,
+     admin_handlers.CategoryListHandler,
      {}, "admin:category:list"),
     (r"/fake-admin/category/(?P<id>\d+)",
-     admin_handers.CategoryDetailHandler,
+     admin_handlers.CategoryDetailHandler,
      {}, "admin:category:detail"),
     (r"/fake-admin/category/create",
-     admin_handers.CategoryCreateHandler,
+     admin_handlers.CategoryCreateHandler,
      {}, "admin:category:create"),
 
     # 后台文章管理
-    (r"/fake-admin/post", admin_handers.PostListHandler,
+    (r"/fake-admin/post", admin_handlers.PostListHandler,
      {}, "admin:post:list"),
     (r"/fake-admin/post/(?P<id>\d+)",
-     admin_handers.PostDetailHandler,
+     admin_handlers.PostDetailHandler,
      {}, "admin:post:detail"),
     (r"/fake-admin/post/create",
-     admin_handers.PostCreateHandler,
+     admin_handlers.PostCreateHandler,
      {}, "admin:post:create"),
 
     # 后台图片管理
-    (r"/fake-admin/image", admin_handers.ImageListHandler,
+    (r"/fake-admin/image", admin_handlers.ImageListHandler,
      {}, "admin:image:list"),
-    (r"/fake-admin/image/(?P<id>\d+)", admin_handers.ImageDetailHandler,
+    (r"/fake-admin/image/(?P<id>\d+)", admin_handlers.ImageDetailHandler,
      {}, "admin:image:detail"),
-    (r"/fake-admin/image/create", admin_handers.ImageCreateHandler,
+    (r"/fake-admin/image/create", admin_handlers.ImageCreateHandler,
      {}, "admin:image:create"),
 
     # 后台系统配置
-    (r"/fake-admin/sys-config", admin_handers.SysConfigHandler,
+    (r"/fake-admin/sys-config", admin_handlers.SysConfigHandler,
      {}, "admin:sys-config"),
 
 

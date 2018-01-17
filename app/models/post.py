@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta
 
 from sqlalchemy import (Column, Integer, String, DateTime, ForeignKey,
-                        bindparam, Text, Boolean)
+                        bindparam, Text, Boolean, func, text)
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
@@ -163,13 +163,10 @@ class Post(ModelAPIMixin, Base):
 
     @staticmethod
     def get_published_post(session):
-        baked_query = sql_bakery(lambda session: session.query(Post))
-        baked_query += lambda q: q.filter(
-            Post.publish_time <= bindparam('now')
-        ).order_by(Post.publish_time)
-        result = baked_query(session).params(
-            now=datetime.now() + timedelta(minutes=5),  # 测试时有延迟
-        )
+        result = session.query(Post).filter(
+            Post.publish_time <= datetime.now() + timedelta(minutes=1),
+            Post.status == True
+        ).order_by(Post.publish_time.desc())
         return result
 
     @staticmethod
@@ -196,6 +193,7 @@ class Post(ModelAPIMixin, Base):
     def create(cls, session, **kwargs):
         """创建Post对象，但是会判断slug是非存在再自动为它追加后缀，防止重复"""
         raw_slug = kwargs.pop('slug')
+        tags = kwargs.pop("tags", None)
         slug = raw_slug
         index = 1
         while True:
@@ -206,7 +204,50 @@ class Post(ModelAPIMixin, Base):
                 slug = raw_slug
                 break
         obj = cls(slug=slug, **kwargs)
+        if tags:
+            obj.tags = tags
+        session.add(obj)
         return obj
+
+    @classmethod
+    def get_archive_month(cls, session):
+        """获取所有有文章发布的月份和这个月份发布的文章数量，用于显示归档(archive)信息
+
+        :return: 返回二维元组(month, article_count)的列表
+        """
+
+        final_result = []
+        # 获取所有发布过文章的月份
+        month_baked_sql = sql_bakery(
+            lambda session: session.query(
+                func.DATE_FORMAT(Post.publish_time, "%Y%m")
+                    .distinct()
+                    .label("publish_month")
+            )
+        )
+        month_baked_sql += lambda q: q.filter(
+            Post.publish_time < bindparam('now')
+        ).order_by(text("publish_month desc"))
+        # 获取特定月份发布的文章数量
+        article_count_query = sql_bakery(
+            lambda session: session.query(
+                func.COUNT(Post.id)
+            )
+        )
+        article_count_query += lambda q: q.filter(
+            func.DATE_FORMAT(Post.publish_time, "%Y%m") == bindparam('month')
+        )
+
+        month_results = month_baked_sql(session).\
+            params(now=datetime.now()).all()
+        for result in month_results:
+            article_count = article_count_query(session).\
+                                params(month=result.publish_month).scalar()
+            final_result.append(
+                (datetime.strptime(result.publish_month, "%Y%m"),
+                 article_count)
+            )
+        return final_result
 
     def to_list_json(self):
         data = {
@@ -254,7 +295,6 @@ class Comment(ModelAPIMixin, Base):
             'comment_set',
             order_by='Comment.floor',
             collection_class=ordering_list('floor', count_from=1),
-            lazy='dynamic'
         ),
     )
     # 回复的comment

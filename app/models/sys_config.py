@@ -15,7 +15,13 @@ class SysConfig(object):
         'key': 'per_page',
         'default': 100,
         'type': int,
-        "desc": "每页显示的条目数量"
+        "desc": "每页显示的条目数量(后台，API)"
+    }
+    blog_per_page = {
+        "key": "blog_per_page",
+        "default": 10,
+        "type": int,
+        "desc": "博客中每页显示的条目数量"
     }
     cache_enable = {
         'key': 'cache_enable',
@@ -28,6 +34,11 @@ class SysConfig(object):
         'default': 60 * 60 * 1,
         'type': int,
         "desc": "缓存过期的时间"
+    }
+    template_version = {
+        'key': "template_version",
+        'default': 'bootstrap4_simple',
+        'desc': "模版版本"
     }
 
     @classmethod

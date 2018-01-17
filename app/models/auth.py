@@ -6,9 +6,8 @@
 import string
 import secrets
 import hashlib
-from datetime import datetime
 
-from sqlalchemy import (Column, Integer, String, DateTime, ForeignKey,
+from sqlalchemy import (Column, Integer, String, ForeignKey,
                         bindparam, Boolean)
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.associationproxy import association_proxy

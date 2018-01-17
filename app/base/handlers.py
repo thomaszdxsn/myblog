@@ -111,12 +111,10 @@ class BaseHandler(web.RequestHandler):
     def config(self):
         return self.application.settings['config']
 
-    def handle_object_list(self, object_list, page_num, to_json=False):
+    def handle_object_list(self, object_list, page_num,
+                           per_page, to_json=False):
         """根据参数来筛选对象列表，默认进行分页"""
-        paginator = Paginator(
-            object_list,
-            SysConfig.get(**SysConfig.per_page)
-        )
+        paginator = Paginator(object_list, per_page)
         page = paginator.page(page_num)
         if to_json:
             object_list = [obj.to_list_json() for obj in page.object_list]
@@ -130,6 +128,13 @@ class BaseHandler(web.RequestHandler):
             "has_next": page.has_next(),
             "current_page": page_num
         }
+    
+    def render(self, template_name, **kwargs):
+        """根据系统配置:template_version来选择模版"""
+        if not template_name.startswith('admin'):
+            template_version = SysConfig.get(**SysConfig.template_version)
+            template_name = template_version + "/" + template_name
+        super(BaseHandler, self).render(template_name, **kwargs)
 
 
 class ListAPIMixin(object):
@@ -150,7 +155,9 @@ class ListAPIMixin(object):
         """获取对象列表"""
         if not self.object_list:
             self.object_list = self.model.get_object_list(self.db)
-        data = self.handle_object_list(self.object_list, self._page,
+        data = self.handle_object_list(self.object_list,
+                                       self._page,
+                                       SysConfig.get(**SysConfig.per_page),
                                        to_json=True)
         self.write(data)
 
@@ -261,13 +268,3 @@ class DetailAPIMixin(object):
         self.model.delete(self.db, obj)
         self.set_status(204)
 
-
-class HomePageHandler(BaseHandler):
-    """首页handler"""
-
-    async def get(self, *args, **kwargs):
-        # await gen.sleep(1)
-        self.write("hello world")
-
-    def post(self):
-        pass

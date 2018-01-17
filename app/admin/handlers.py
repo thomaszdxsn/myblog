@@ -59,7 +59,11 @@ class CategoryListHandler(BaseHandler):
     @web.authenticated
     def get(self, *args, **kwargs):
         object_list = Category.get_object_list(self.db)
-        data = self.handle_object_list(object_list, self._page)
+        data = self.handle_object_list(
+            object_list,
+            self._page,
+            SysConfig.get(**SysConfig.per_page)
+        )
         self.render(
             "admin/category/list.html",
             section=self._section,
@@ -203,7 +207,11 @@ class PostListHandler(BaseHandler):
     @web.authenticated
     def get(self, *args, **kwargs):
         object_list = Post.get_object_list(self.db)
-        data = self.handle_object_list(object_list, self._page)
+        data = self.handle_object_list(
+            object_list,
+            self._page,
+            SysConfig.get(**SysConfig.per_page)
+        )
         self.render(
             'admin/post/list.html',
             section=self._section,
@@ -469,8 +477,10 @@ class SysConfigHandler(BaseHandler):
         form = SysConfigForm(data={
             "session_expire": SysConfig.get(**SysConfig.session_expire),
             "per_page": SysConfig.get(**SysConfig.per_page),
+            "blog_per_page": SysConfig.get(**SysConfig.blog_per_page),
             "cache_enable": SysConfig.get(**SysConfig.cache_enable),
-            "cache_expire": SysConfig.get(**SysConfig.cache_expire)
+            "cache_expire": SysConfig.get(**SysConfig.cache_expire),
+            'template_version': SysConfig.get(**SysConfig.template_version)
         })
         self.render(
             "admin/sys_config/index.html",
@@ -508,7 +518,11 @@ class ImageListHandler(BaseHandler):
     @web.authenticated
     def get(self, *args, **kwargs):
         object_list = Image.get_object_list(self.db)
-        data = self.handle_object_list(object_list, self._page)
+        data = self.handle_object_list(
+            object_list,
+            self._page,
+            SysConfig.get(**SysConfig.per_page)
+        )
         self.render(
             'admin/image/list.html',
             section=self._section,
