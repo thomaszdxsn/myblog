@@ -30,8 +30,7 @@ class Session(object):
         self._redis.hset(self._id, 'last_active', time.time())
         self._redis.expire(
             self._id,
-            SysConfig.get(SysConfig.expire_time['key'],
-                          SysConfig.expire_time['default'])
+            SysConfig.get(**SysConfig.session_expire)
         )
 
     def generate_session_id(self):

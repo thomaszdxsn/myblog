@@ -6,12 +6,13 @@ from io import BytesIO
 
 from tornado import web, gen
 
-from .forms import LoginForm, CategoryForm, PostForm
+from .forms import LoginForm, CategoryForm, PostForm, SysConfigForm
 from ..base.handlers import BaseHandler
 from ..libs.utils import aggregate_errors
 from ..libs.cloud import QiniuClient
 from ..models.auth import User
 from ..models.post import Category, Post, Image, Tag
+from ..models.sys_config import SysConfig
 
 
 class AdminLoginHandler(BaseHandler):
@@ -457,3 +458,37 @@ class PostDetailHandler(BaseHandler):
             return self.write_error(404)
         Post.delete(self.db, obj)
         self.set_status(204)
+
+
+class SysConfigHandler(BaseHandler):
+    _section = 'sys-config'
+
+    @web.authenticated
+    def get(self, *args, **kwargs):
+        form = SysConfigForm(data={
+            "session_expire": SysConfig.get(**SysConfig.session_expire),
+            "per_page": SysConfig.get(**SysConfig.per_page),
+            "cache_enable": SysConfig.get(**SysConfig.cache_enable),
+            "cache_expire": SysConfig.get(**SysConfig.cache_expire)
+        })
+        self.render(
+            "admin/sys_config/index.html",
+            section=self._section,
+            form=form,
+            errors=None
+        )
+
+    @web.authenticated
+    def post(self, *args, **kwargs):
+        form = SysConfigForm(self.request.arguments)
+        if not form.validate():
+            return self.render(
+                "admin/sys_config/index.html",
+                section=self._section,
+                form=form,
+                errors=None
+            )
+
+        for key, value in form.data.items():
+            SysConfig.set(key, value, type=type(value))
+        self.redirect("admin:sys-config")

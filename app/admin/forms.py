@@ -4,7 +4,7 @@ from datetime import datetime
 
 from wtforms_tornado import Form
 from wtforms import (StringField, PasswordField, SelectField, TextAreaField,
-                     FileField, DateTimeField, BooleanField)
+                     FileField, DateTimeField, BooleanField, IntegerField)
 from wtforms.validators import Email, Regexp, DataRequired
 
 
@@ -91,3 +91,22 @@ class PostForm(Form):
         "内容",
         render_kw={"rows": 30}
     )
+
+
+class SysConfigForm(Form):
+    session_expire = IntegerField(
+        "session过期时间",
+        validators=[DataRequired()]
+    )
+    per_page = IntegerField(
+        "分页时每页的条目数量",
+        validators=[DataRequired()]
+    )
+    cache_enable = BooleanField(
+        "是否开启缓存",
+    )
+    cache_expire = IntegerField(
+        "缓存过期时间",
+    )
+
+

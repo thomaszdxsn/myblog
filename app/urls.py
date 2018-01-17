@@ -40,6 +40,10 @@ urlpatterns = [
      admin_handers.PostCreateHandler,
      {}, "admin:post:create"),
 
+    # 后台系统配置
+    (r"/fake-admin/sys-config", admin_handers.SysConfigHandler,
+     {}, "admin:sys-config"),
+
 
     # API -- version1.0
 

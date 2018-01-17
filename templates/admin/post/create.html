@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container">
 <div class="card">
-    <div class="card-header bg-light">创建新的文章</div>
+    <div class="card-header bg-light">创建新文章</div>
     <div class="card-body">
         <form method="post" enctype="multipart/form-data">
             {% for field in form %}
@@ -11,7 +11,7 @@
                   {% if field.name == 'status' %}
                     <div class="toggle-switch" data-ts-color="success">
                         <label for="ts4" class="ts-label">{{ field.label.text }}</label>
-                        <input id="ts4" type="checkbox" hidden="hidden" checked name="status">
+                        {% raw field %}
                         <label for="ts4" class="ts-helper"></label>
                     </div>
                   {% else %}

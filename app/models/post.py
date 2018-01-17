@@ -68,7 +68,7 @@ class Image(ModelAPIMixin, Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(64), index=True)
     key = Column(String(128))
-    url = Column(String(256))
+    url = Column(String(256))  # TODO: URL写死是有问题的，在更换七牛domain的时候不能自动切换
 
     def thumbnail(self, width, height):
         """七牛云的缩略图功能"""
@@ -156,7 +156,9 @@ class Post(ModelAPIMixin, Base):
     category = relationship(
         'Category',
         backref=backref('post_set',
-                        lazy='dynamic')
+                        lazy='dynamic',
+                        cascade='all, delete-orphan'
+                        ),
     )
 
     @staticmethod

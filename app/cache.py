@@ -30,6 +30,10 @@ class BaseCache(object):
         """设置缓存过期时间"""
         raise NotImplemented
 
+    def flush_all(self):
+        """刷新所有缓存"""
+        raise NotImplemented
+
 
 class RedisCache(BaseCache):
     """Redis实现的缓存组件"""
@@ -68,5 +72,7 @@ class RedisCache(BaseCache):
         cache_key = "{0}:{1}".format(self.key, key)
         self.client.expire(cache_key, seconds)
 
+    def flush_all(self):
+        self.client.delete(*self.client.keys("http*"))
 
 

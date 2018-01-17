@@ -51,6 +51,14 @@
                         </a>
                     </li>
 
+                    <li class="nav-title">配置</li>
+
+                    <li class="nav-item">
+                        <a href="{{ reverse_url('admin:sys-config') }}"
+                           class="nav-link {% if section == 'sys-config' %}active{% end %}">
+                            <i class="icon icon-wrench"></i>系统配置
+                        </a>
+                    </li>
 
 
                 </ul>

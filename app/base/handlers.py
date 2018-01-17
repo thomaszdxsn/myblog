@@ -107,8 +107,7 @@ class BaseHandler(web.RequestHandler):
         """根据参数来筛选对象列表，默认进行分页"""
         paginator = Paginator(
             object_list,
-            int(SysConfig.get(SysConfig.per_page['key'],
-                          SysConfig.per_page['default']))
+            SysConfig.get(**SysConfig.per_page)
         )
         page = paginator.page(page_num)
         if to_json:

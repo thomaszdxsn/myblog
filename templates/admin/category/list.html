@@ -36,7 +36,7 @@
                             </a>
                         </td>
                         <td>{{ '' if not obj.parent else obj.parent.name }}</td>
-                        <td>{{ obj.post_set.count() }}</td>
+                        <td>{{ obj.post_set.count() + sum(obj.post_set.count() for obj in obj.children) }}</td>
                         <td>{{ obj.created_time }}</td>
                         <td>{{ obj.modified_time }}</td>
                         <td>

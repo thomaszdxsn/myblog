@@ -6,6 +6,7 @@
 import types
 
 from app.libs.utils import import_object
+from app.models.sys_config import SysConfig
 
 
 class BaseMiddleware(object):
@@ -35,7 +36,7 @@ class CacheMiddleware(BaseMiddleware):
     """缓存中间件"""
 
     def __init__(self, handler, cache,
-                 expire=60 * 60, no_get_flush=True,
+                 no_get_flush=True,
                  host=None, port=None, password=None, **kwargs):
         """初始化缓存配置
 
@@ -56,7 +57,6 @@ class CacheMiddleware(BaseMiddleware):
         :param password: 缓存后端的密码
         """
         self.handler = handler
-        self.expire = expire
         self.no_get_flush = no_get_flush
         self.request = handler.request
 
@@ -105,12 +105,16 @@ class CacheMiddleware(BaseMiddleware):
                     # 如果是304状态码就不会包含body数据
                     if self._status_code != 304:
                         chunk = b"".join(self._write_buffer)
-                        this.cache.set(redis_key, chunk, expire=this.expire)
+                        this.cache.set(
+                            redis_key, chunk,
+                            expire=SysConfig.get(
+                                SysConfig.cache_expire['key'],
+                                default=SysConfig.cache_expire['default'],
+                                type_=SysConfig.cache_expire['type']
+                            )
+                        )
                     super(self.__class__, self).flush(*args, **kwargs)
                 this.handler.flush = types.MethodType(_flush, this.handler)
-
-    def after_request(self):
-        """缓存中间件不需要善后工作"""
 
 
 class MiddlewareProcess(object):
@@ -120,15 +124,30 @@ class MiddlewareProcess(object):
     def prepare(handler, middleware_dicts):
         """嵌入到`prepare()`的处理流程中"""
         for middleware, kwds in middleware_dicts.items():
+            if 'cache' in middleware.lower():
+                if SysConfig.get(**SysConfig.cache_enable) is False:
+                    middleware.cache.flush_all()
+                    # 没有开启缓存，跳过缓存中间件
+                    continue
             middleware_cls = import_object(middleware)
             middleware_obj = middleware_cls(handler, **kwds)
-            middleware_obj.before_request()
+            try:
+                middleware_obj.before_request()
+            except NotImplemented:
+                pass
 
     @staticmethod
     def on_finish(handler, middleware_dicts):
         """嵌入到`on_finish()`的处理流程中"""
         for middleware, kwds in middleware_dicts.items():
+            if 'cache' in middleware.lower():
+                if SysConfig.get(**SysConfig.cache_enable) is False:
+                    # 没有开启缓存，跳过缓存中间件
+                    continue
             middleware_cls = import_object(middleware)
             middleware_obj = middleware_cls(handler, **kwds)
-            middleware_obj.after_request()
+            try:
+                middleware_obj.after_request()
+            except NotImplemented:
+                pass
 

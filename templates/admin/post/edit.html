@@ -11,14 +11,14 @@
                   {% if field.name == 'status' %}
                     <div class="toggle-switch" data-ts-color="success">
                         <label for="ts4" class="ts-label">{{ field.label.text }}</label>
-                        <input id="ts4" type="checkbox" hidden="hidden" checked name="status">
+                        {% raw field %}
                         <label for="ts4" class="ts-helper"></label>
                     </div>
                   {% else %}
                     {% raw field.label(class_="form-control-label") %}
                     {% if field.name == 'image' %}
                         {% if obj.image %}
-                        <img src="{{ obj.image.thumbnail(120, 120) }}">
+                        <img src="{{ obj.image.thumbnail(300, 300) }}">
                         {% end %}
                     {% end %}
                     {% raw field(class_="form-control") %}
