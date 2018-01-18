@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 from datetime import datetime, timedelta
+import markdown
 
 from sqlalchemy import (Column, Integer, String, DateTime, ForeignKey,
                         bindparam, Text, Boolean, func, text)
@@ -72,7 +73,13 @@ class Image(ModelAPIMixin, Base):
 
     def thumbnail(self, width, height):
         """七牛云的缩略图功能"""
-        return self.url + "?imageMogr2/thumbnail/{0}x{1}".format(
+        return self.url + "?imageMogr2/auto-orient/thumbnail/" \
+                          "{0}x{1}!/blur/1x0/quality/100|imageslim".format(
+            width, height
+        )
+
+    def crop(self, width, height):
+        return self.url + "?imageMogr2/crop/{0}x{1}".format(
             width, height
         )
 
@@ -97,6 +104,8 @@ class Tag(ModelAPIMixin, Base):
         tag_str_list = string.split(sep)
         for tag_str in tag_str_list:
             tag_str = tag_str.strip()
+            if not tag_str:
+                continue
             obj = session.query(Tag).filter(
                 Tag.name == tag_str
             ).one_or_none()
@@ -104,6 +113,15 @@ class Tag(ModelAPIMixin, Base):
                 obj = Tag(name=tag_str)
             tag_list.append(obj)
         return tag_list
+
+    @classmethod
+    def get_object_list(cls, session, have_post=False):
+        baked_query = sql_bakery(lambda session: session.query(Tag))
+        if have_post:
+            baked_query += lambda q: q.join(PostTag).filter(
+                PostTag.tag_id == Tag.id
+            )
+        return baked_query(session)
 
     def to_list_json(self):
         data = {
@@ -161,12 +179,31 @@ class Post(ModelAPIMixin, Base):
                         ),
     )
 
+    __markdown_content = None
+
+    @property
+    def markdown_content(self):
+        if not self.__markdown_content:
+            self.__markdown_content = markdown.markdown(self.content)
+        return self.__markdown_content
+
     @staticmethod
     def get_published_post(session):
         result = session.query(Post).filter(
             Post.publish_time <= datetime.now() + timedelta(minutes=1),
             Post.status == True
         ).order_by(Post.publish_time.desc())
+        return result
+
+    @staticmethod
+    def get_object_by_slug(session, slug, field_list=None):
+        baked_sql = sql_bakery(lambda session: session.query(Post))
+        baked_sql += lambda q: q.filter(
+            Post.slug == bindparam("slug")
+        )
+        result = baked_sql(session).params(
+            slug=slug
+        ).one_or_none()
         return result
 
     @staticmethod

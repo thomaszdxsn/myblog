@@ -1,16 +1,42 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-COMPATIBLE" content="IE=edge">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Title</title>
-</head>
-<body>
-    {% for category_obj in category_data %}
-        {% if not category_obj.parent %}
-            {{ category_obj.name }}
+{% extends "base.html" %}
+
+{% block content %}
+
+{% for post_obj in post_data['object_list'] %}
+<div class="card mb-4">
+  <a href="{{ reverse_url('post', post_obj.slug) }}">
+    <img class="card-img-top" src="{{ post_obj.image.thumbnail(750, 300) }}" alt="Post image">
+  </a>
+  <div class="card-body">
+    <h2 class="card-title">{{ post_obj.title }}</h2>
+    <p class="card-text">{{ post_obj.brief }}</p>
+    <a href="{{ reverse_url('post', post_obj.slug) }}" class="btn btn-primary">更多 &rarr;</a>
+  </div>
+  <div class="card-footer text-muted">
+    <div class="row">
+      <span class="col-md-4">
+        分类:
+        <a href="?category={{ post_obj.category.id }}">
+           {{ post_obj.category.name }}
+        </a>
+      </span>
+      <span class="col-md-4">
+        标签:
+        {% for index, tag in enumerate(post_obj.tags, start=1) %}
+          <a href="?tag={{ tag.id }}">
+            {{ tag.name }}
+          </a>
+          {% if index != len(post_obj.tags) %}
+            ,
+          {% end %}
         {% end %}
-    {% end %}
-</body>
-</html>
+      </span>
+      <span class="col-md-4">
+        发布于: {{ str(post_obj.publish_time.date()) }}
+      </span>
+    </div>
+  </div>
+</div>
+{% end %}
+
+{% end %}

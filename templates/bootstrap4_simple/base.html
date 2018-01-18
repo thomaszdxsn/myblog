@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>{% block title %}{% end %}</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="{{ static_url('bootstrap4_simple/vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="{{ static_url('bootstrap4_simple/css/blog-home.css') }}" rel="stylesheet">
+    {% block head %}{% end %}
+
+  </head>
+
+  <body>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+      <div class="container">
+        <a class="navbar-brand" href="#">Start Bootstrap</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item active">
+              <a class="nav-link" href="#">Home
+                <span class="sr-only">(current)</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">About</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">Services</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">Contact</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Page Content -->
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8">
+                {% block content %}{% end %}
+            </div>
+            <div class="col-md-4">
+
+          <!-- Info Widget -->
+          <div class="card my-4">
+            统计信息
+          </div>
+
+          <!-- Tag Widget -->
+          <div class="card my-4">
+            <h5 class="card-header">标签</h5>
+            <div class="card-body">
+              <div class="row">
+                {% for index, tag_obj in enumerate(tag_data.all(), start=1) %}
+                   {% if index % 3 == 1 %}
+                      <div class="col-lg-6">
+                        <ul class="list-unstyled mb-0">
+                   {% end %}
+                      <li>
+                        <a href="{{ reverse_url('homepage') }}?tag={{ tag_obj.id }}">
+                            {{ tag_obj.name }}
+                        </a>
+                      </li>
+                   {% if index % 3 == 0 or index == len(tag_data.all())%}
+                        </ul>
+                      </div>
+                   {% end %}
+                {% end %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Categories Widget -->
+          <div class="card my-4">
+            <h5 class="card-header">分类</h5>
+            <div class="card-body">
+              <div class="row">
+                {% for index, category_obj in enumerate(category_data, start=1) %}
+                   {% if index % 3 == 1 %}
+                      <div class="col-lg-6">
+                        <ul class="list-unstyled mb-0">
+                   {% end %}
+                      <li><a href="{{ reverse_url('homepage') }}?category={{ category_obj.id }}">
+                          {{ category_obj.name }}
+                      </a></li>
+                   {% if index % 3 == 0 %}
+                        </ul>
+                      </div>
+                   {% end %}
+                {% end %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Archive Widget -->
+          <div class="card my-4">
+            <h5 class="card-header">归档</h5>
+            <div class="card-body">
+                <div class="row">
+                {% for index, archive_tuple in enumerate(archive_info, start=1) %}
+                   {% if index % 3 == 1 %}
+                      <div class="col-lg-6">
+                        <ul class="list-unstyled mb-0">
+                   {% end %}
+                      <li>
+                          <a href="{{ reverse_url('homepage') }}?month={{ archive_tuple[0].strftime('%Y%m') }}">
+                          {{ archive_tuple[0].year }}年{{ archive_tuple[0].month }}月({{ archive_tuple[1] }})
+                          </a>
+                      </li>
+                   {% if index % 3 == 0 %}
+                        </ul>
+                      </div>
+                   {% end %}
+                {% end %}
+                </div>
+            </div>
+          </div>
+
+        </div>
+        </div>
+    </div>
+    <!-- /.container -->
+
+    <!-- Footer -->
+    <footer class="py-5 bg-dark">
+      <div class="container">
+        <p class="m-0 text-center text-white">Copyright &copy; Thomaszdxsn's Blog</p>
+      </div>
+      <!-- /.container -->
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="{{ static_url('bootstrap4_simple/vendor/jquery/jquery.min.js') }}"></script>
+    <script src="{{ static_url('bootstrap4_simple/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+
+  </body>
+
+</html>

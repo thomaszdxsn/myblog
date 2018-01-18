@@ -11,6 +11,9 @@ urlpatterns = [
     # 首页
     (r"/", blog_handlers.HomepageHandler,
      {}, "homepage"),
+    # 文章
+    (r"/(?P<slug>\w+)", blog_handlers.PostHandler,
+     {}, "post"),
     
 
     # 后台页面
