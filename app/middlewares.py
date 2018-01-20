@@ -7,6 +7,7 @@ import types
 
 from app.libs.utils import import_object
 from app.models.sys_config import SysConfig
+from app.models.stats import SiteStats
 
 
 class BaseMiddleware(object):
@@ -83,7 +84,10 @@ class CacheMiddleware(BaseMiddleware):
                         "Content-Type",
                         "application/json; charset=UTF-8"
                     )
-                self.handler.finish(cache_content)
+                this = self
+                def _get(self, *args, **kwargs):
+                    this.handler.finish(cache_content)
+                this.handler.get = types.MethodType(_get, this.handler)
             else:
                 # 如果没有缓存内容,
                 # 我们需要使用monkey-patch来改造`.flush()`方法,
@@ -100,6 +104,25 @@ class CacheMiddleware(BaseMiddleware):
                         )
                     super(self.__class__, self).flush(*args, **kwargs)
                 this.handler.flush = types.MethodType(_flush, this.handler)
+
+
+class StatsMiddleware(BaseMiddleware):
+    """数据统计中间件"""
+
+    def __init__(self, handler):
+        self.handler = handler
+        self.request = handler.request
+
+    def before_request(self):
+        # 增量UV数据
+        SiteStats.incr_uv(self.request.remote_ip)
+        # 增量PV数据
+        SiteStats.incr_pv()
+        # 存储访问者的UA
+        SiteStats.save_access_ua(self.request.headers['User-Agent'],
+                                 self.request.remote_ip)
+        # 存储访问者的IP
+        SiteStats.save_access_ip(self.request.remote_ip)
 
 
 class MiddlewareProcess(object):
@@ -133,6 +156,6 @@ class MiddlewareProcess(object):
             middleware_obj = middleware_cls(handler, **kwds)
             try:
                 middleware_obj.after_request()
-            except NotImplemented:
+            except Exception:
                 pass
 

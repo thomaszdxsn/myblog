@@ -182,11 +182,12 @@ class Post(ModelAPIMixin, Base):
 
     id = Column(Integer, primary_key=True)
     title = Column(String(64), index=True, nullable=False)
-    type = Column(ChoiceType(TYPES))
     slug = Column(String(128), nullable=False)
+    type = Column(ChoiceType(TYPES))
     meta_description = Column(String(128))
     meta_keywords = Column(String(128))
     brief = Column(String(512))
+    view_num = Column(Integer)
     content = Column(Text)
     status = Column(Boolean, default=True)
     publish_time = Column(DateTime, default=datetime.now, index=True)
@@ -231,7 +232,7 @@ class Post(ModelAPIMixin, Base):
         if not self._markdown_content:
             self._markdown_content = markdown.markdown(
                 self.content,
-                ['extra', 'codehilite']
+                ['extra']
             )
         return self._markdown_content
 

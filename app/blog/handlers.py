@@ -8,6 +8,7 @@ from sqlalchemy import func
 from ..base.handlers import BaseHandler
 from ..models.post import Post, Category, PostTag, Tag, Comment
 from ..models.sys_config import SysConfig
+from ..models.stats import SiteStats
 from .forms import CommentForm
 
 
@@ -84,8 +85,8 @@ class PostHandler(BaseHandler):
     """文章详情"""
     
     def prepare(self):
-        # TODO: 统计文章的点击量
-        print(self.path_kwargs)
+        # 统计文章的点击量
+        SiteStats.incr_post_view(self.path_kwargs['slug'])
         super(PostHandler, self).prepare()
 
     def get(self, *args, **kwargs):

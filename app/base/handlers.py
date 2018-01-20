@@ -64,7 +64,7 @@ class BaseHandler(web.RequestHandler):
             self._db = DBSession(bind=create_engine(
                 self.config.SQLALCHEMY_URI,
                 pool_size=self.config.SQLALCHEMY_POOL_SIZE,
-                pool_recycle=self.config.SQLALCHEMY_POOL_RECYCLE
+                pool_recycle=self.config.SQLALCHEMY_POOL_RECYCLE,
             ))
         return self._db
 

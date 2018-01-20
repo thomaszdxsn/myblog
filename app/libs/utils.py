@@ -51,3 +51,17 @@ def aggregate_errors(errors):
     for key, value in errors.items():
         error_string += "{0} ".format(",".join(value))
     return error_string
+
+
+def get_next_weekday(date, weekday):
+    """给定一个日期和礼拜x，获取下一个礼拜x的日期
+
+    :param date: date或者datetime对象
+    :param weekday: 礼拜X
+    :return: date对象，下个礼拜X的日期
+    """
+    weekday -= 1    # 让礼拜X减1，便于计算
+    next_weekday = date + datetime.timedelta(
+        days=(weekday - date.weekday()) % 7
+    )
+    return next_weekday
