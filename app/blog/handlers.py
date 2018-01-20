@@ -82,6 +82,11 @@ class HomepageHandler(BaseHandler):
 
 class PostHandler(BaseHandler):
     """文章详情"""
+    
+    def prepare(self):
+        # TODO: 统计文章的点击量
+        print(self.path_kwargs)
+        super(PostHandler, self).prepare()
 
     def get(self, *args, **kwargs):
         slug = kwargs.get('slug', None)

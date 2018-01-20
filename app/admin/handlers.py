@@ -11,7 +11,7 @@ from ..base.handlers import BaseHandler
 from ..libs.utils import aggregate_errors
 from ..libs.cloud import QiniuClient
 from ..models.auth import User
-from ..models.post import Category, Post, Image, Tag
+from ..models.post import Category, Post, Image, Tag, PostCollection
 from ..models.sys_config import SysConfig
 
 
@@ -302,8 +302,17 @@ class PostCreateHandler(BaseHandler):
             )
             form.image.data = image_obj  # 共享一个变量，可以应对没有上传图片的情况
 
-        # 处理标签
-        tags = Tag.create_by_string(self.db, form.tags.data)
+        # 处理文章集合
+        if form.collection.data:
+            collection = PostCollection.get_object_by_name(
+                form.collection.data, self.db
+            )
+            if not collection:
+                collection = PostCollection.create(
+                    self.db,
+                    name=form.collection.data
+                )
+            form.collection.data = collection
         post_obj = Post.create(
             self.db,
             category_id=form.category_id.data,
@@ -315,8 +324,11 @@ class PostCreateHandler(BaseHandler):
             status=form.status.data,
             publish_time=form.publish_time.data,
             content=form.content.data,
-            type=form.type.data
+            type=form.type.data,
+            collection=form.collection.data
         )
+        # 处理标签
+        tags = Tag.create_by_string(self.db, form.tags.data)
         if tags:
             post_obj.tags = tags
         if isinstance(form.image.data, Image):
@@ -342,6 +354,9 @@ class PostDetailHandler(BaseHandler):
         form = PostForm(data=form_data)
         form.category_id.choices = [(obj.id, obj.name)
                                     for obj in category_list]
+        if obj.collection:
+            form.collection.data = obj.collection.name
+
         self.render(
             "admin/post/edit.html",
             section=self._section,
@@ -441,8 +456,6 @@ class PostDetailHandler(BaseHandler):
             )
             form.image.data = image_obj  # 共享一个变量，可以应对没有上传图片的情况
 
-        # 处理标签
-        tags = Tag.create_by_string(self.db, form.tags.data)
         Post.update(
             self.db,
             obj,
@@ -456,8 +469,26 @@ class PostDetailHandler(BaseHandler):
             status=form.status.data,
             publish_time=form.publish_time.data,
             content=form.content.data,
-            type=form.type.data
+            type=form.type.data,
         )
+        # collection的处理
+        if not form.collection.data:
+            obj.collection = None
+        else:
+            if ((not obj.collection) or
+                 (obj.collection and
+                          obj.collection.name != form.collection.data)):
+                collection = PostCollection.get_object_by_name(
+                    form.collection.data, self.db
+                )
+                if not collection:
+                    collection = PostCollection.create(
+                        self.db,
+                        name=form.collection.data
+                    )
+                obj.collection = collection
+        # 处理标签
+        tags = Tag.create_by_string(self.db, form.tags.data)
         if tags:
             obj.tags = tags
         if isinstance(form.image.data, Image):     # 暂不能删除文章的图片

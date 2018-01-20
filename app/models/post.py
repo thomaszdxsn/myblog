@@ -76,7 +76,7 @@ class Image(ModelAPIMixin, Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(64), index=True)
     key = Column(String(128))
-    url = Column(String(256))  # TODO: URL写死是有问题的，在更换七牛domain的时候不能自动切换
+    url = Column(String(256)) # TODO: URL写死是有问题的，在更换七牛domain的时候不能自动切换
 
     def thumbnail(self, width, height):
         """七牛云的缩略图功能"""
@@ -153,11 +153,22 @@ class PostTag(Base):
         self.tag = tag
 
 
-class PostCollection(Base):
+class PostCollection(ModelAPIMixin, Base):
     """文章集合"""
     __tablename__ = 'post_collection'
     id = Column(Integer, primary_key=True)
     name = Column(String(64), index=True, nullable=False)
+
+    @classmethod
+    def get_object_by_name(cls, name, session):
+        baked_sql = sql_bakery(lambda session: session.query(PostCollection))
+        baked_sql += lambda q: q.filter(
+            PostCollection.name == bindparam("name")
+        )
+        result = baked_sql(session).params(
+            name=name
+        ).one_or_none()
+        return result
 
 
 class Post(ModelAPIMixin, Base):
@@ -217,8 +228,8 @@ class Post(ModelAPIMixin, Base):
     _markdown_content = None
     @property
     def markdown_content(self):
-        if not self.__markdown_content:
-            self.__markdown_content = markdown.markdown(
+        if not self._markdown_content:
+            self._markdown_content = markdown.markdown(
                 self.content,
                 ['extra', 'codehilite']
             )

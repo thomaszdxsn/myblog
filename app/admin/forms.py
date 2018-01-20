@@ -81,6 +81,9 @@ class PostForm(Form):
     brief = TextAreaField(
         '简介',
     )
+    collection = StringField(
+        "文章集合"
+    )
     tags = StringField(
         '标签'
     )
@@ -97,7 +100,7 @@ class PostForm(Form):
     )
     content = TextAreaField(
         "内容",
-        render_kw={"rows": 30}
+        render_kw={"rows": 30, "required": True}
     )
 
 
