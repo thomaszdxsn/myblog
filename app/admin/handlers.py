@@ -41,11 +41,11 @@ class AdminLoginHandler(BaseHandler):
 class AdminLogoutHandler(BaseHandler):
     """后台登出"""
 
-    @web.authenticated
     def get(self, *args, **kwargs):
         self.clear_header('Session-ID')
         self.clear_cookie('session_id')
-        self.redirect(self.reverse_url('admin:login'), permanent=True)
+        self.session.logout()
+        self.redirect(self.reverse_url('admin:login'))
 
 
 class CategoryListHandler(BaseHandler):
@@ -314,7 +314,8 @@ class PostCreateHandler(BaseHandler):
             meta_keywords=form.meta_keywords.data,
             status=form.status.data,
             publish_time=form.publish_time.data,
-            content=form.content.data
+            content=form.content.data,
+            type=form.type.data
         )
         if tags:
             post_obj.tags = tags
@@ -333,8 +334,12 @@ class PostDetailHandler(BaseHandler):
         obj = Post.get_object_by_id(self.db, kwargs['id'])
         if not obj:
             return self.write_error(404)
+
+        # 表单的自动填充
         category_list = Category.get_object_list(self.db)
-        form = PostForm(data=obj.__dict__)
+        form_data = obj.__dict__
+        form_data['type'] = obj.type.code
+        form = PostForm(data=form_data)
         form.category_id.choices = [(obj.id, obj.name)
                                     for obj in category_list]
         self.render(
@@ -450,7 +455,8 @@ class PostDetailHandler(BaseHandler):
             meta_keywords=form.meta_keywords.data,
             status=form.status.data,
             publish_time=form.publish_time.data,
-            content=form.content.data
+            content=form.content.data,
+            type=form.type.data
         )
         if tags:
             obj.tags = tags
@@ -480,7 +486,11 @@ class SysConfigHandler(BaseHandler):
             "blog_per_page": SysConfig.get(**SysConfig.blog_per_page),
             "cache_enable": SysConfig.get(**SysConfig.cache_enable),
             "cache_expire": SysConfig.get(**SysConfig.cache_expire),
-            'template_version': SysConfig.get(**SysConfig.template_version)
+            'template_version': SysConfig.get(**SysConfig.template_version),
+            'comment_limit_enable': SysConfig.get(
+                                        **SysConfig.comment_limit_enable),
+            'comment_limit': SysConfig.get(**SysConfig.comment_limit),
+            'template_code_skin': SysConfig.get(**SysConfig.template_code_skin)
         })
         self.render(
             "admin/sys_config/index.html",

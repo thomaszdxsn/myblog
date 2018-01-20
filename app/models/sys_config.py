@@ -40,6 +40,25 @@ class SysConfig(object):
         'default': 'bootstrap4_simple',
         'desc': "模版版本"
     }
+    template_code_skin = {
+        "key": "template_code_skin",
+        'default': 'doxy',
+        'desc': '模版中代码块显示的皮肤(google:code-prettify库)'
+    }
+
+    # 评论限制
+    comment_limit_enable = {
+        "key": "comment_limit_enable",
+        'default': True,
+        "type": bool,
+        "desc": "是否开启评论限制"
+    }
+    comment_limit = {
+        "key": "comment_limit",
+        "default": 20,
+        'type': int,
+        "desc": "评论限制(条/每分钟)"
+    }
 
     @classmethod
     def get(cls, key, default=None, type=None, **kwargs):
@@ -80,3 +99,14 @@ class SysConfig(object):
                 value = type(value)
         redis_cli.set(redis_key, value)
 
+    @classmethod
+    def incr(cls, key, increment=1):
+        """为KEY增量"""
+        redis_key = "{0}:{1}".format(cls._prefix, key)
+        redis_cli.incr(redis_key, increment)
+
+    @classmethod
+    def expire(cls, key, seconds):
+        """为KEY加入过期时间"""
+        redis_key = "{0}:{1}".format(cls._prefix, key)
+        redis_cli.expire(redis_key, seconds)

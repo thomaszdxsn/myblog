@@ -13,11 +13,22 @@
 
     <!-- Custom styles for this template -->
     <link href="{{ static_url('bootstrap4_simple/css/blog-home.css') }}" rel="stylesheet">
+
+    <!--Code highlight(prettify.css)-->
+    <link rel="stylesheet" type="text/css" href="{{ static_url('code-prettify/skins/{0}.css'.format(code_skin)) }}">
+    <style>
+        li.L0, li.L1, li.L2, li.L3,
+        li.L5, li.L6, li.L7, li.L8 {
+          list-style-type: decimal !important;
+        }
+    </style>
+    <script type="text/javascript" src="{{ static_url('code-prettify/prettify.js') }}"></script>
     {% block head %}{% end %}
+
 
   </head>
 
-  <body>
+  <body onload="PR.prettyPrint()">
 
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
@@ -89,7 +100,7 @@
             <h5 class="card-header">分类</h5>
             <div class="card-body">
               <div class="row">
-                {% for index, category_obj in enumerate(category_data, start=1) %}
+                {% for index, category_obj in enumerate(category_data.all(), start=1) %}
                    {% if index % 3 == 1 %}
                       <div class="col-lg-6">
                         <ul class="list-unstyled mb-0">
@@ -97,7 +108,7 @@
                       <li><a href="{{ reverse_url('homepage') }}?category={{ category_obj.id }}">
                           {{ category_obj.name }}
                       </a></li>
-                   {% if index % 3 == 0 %}
+                   {% if index % 3 == 0 or index == len(category_data.all() ) %}
                         </ul>
                       </div>
                    {% end %}
@@ -121,7 +132,7 @@
                           {{ archive_tuple[0].year }}年{{ archive_tuple[0].month }}月({{ archive_tuple[1] }})
                           </a>
                       </li>
-                   {% if index % 3 == 0 %}
+                   {% if index % 3 == 0 or index == len(archive_info) %}
                         </ul>
                       </div>
                    {% end %}
@@ -136,7 +147,7 @@
     <!-- /.container -->
 
     <!-- Footer -->
-    <footer class="py-5 bg-dark">
+    <footer class="py-5 bg-dark col-12">
       <div class="container">
         <p class="m-0 text-center text-white">Copyright &copy; Thomaszdxsn's Blog</p>
       </div>
@@ -146,7 +157,10 @@
     <!-- Bootstrap core JavaScript -->
     <script src="{{ static_url('bootstrap4_simple/vendor/jquery/jquery.min.js') }}"></script>
     <script src="{{ static_url('bootstrap4_simple/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-
+    <script>
+        $('pre').addClass('prettyprint linenums');
+    </script>
+    {% block js %}{% end %}
   </body>
 
 </html>

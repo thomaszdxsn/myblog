@@ -66,3 +66,4 @@ class Session(object):
         if not item in self._skip:
             return self._redis.hdel(self._id, item)
         super().__delattr__(item)
+

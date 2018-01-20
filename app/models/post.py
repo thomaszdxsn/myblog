@@ -1,17 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-from datetime import datetime, timedelta
+import hashlib
 import markdown
+from datetime import datetime, timedelta
+from urllib.parse import urlencode
 
 from sqlalchemy import (Column, Integer, String, DateTime, ForeignKey,
-                        bindparam, Text, Boolean, func, text)
+                        bindparam, Text, Boolean, func, text, select, and_)
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.ext.orderinglist import ordering_list
+from sqlalchemy_utils import ChoiceType
 
-from .base import Base, sql_bakery, ModelAPIMixin
+from .base import Base, sql_bakery, ModelAPIMixin, redis_cli
+from ..models.sys_config import SysConfig
 
-__all__ = ['Category', 'Image', 'Post', 'Comment', 'Tag', 'PostTag']
+__all__ = ['Category', 'Image', 'Post', 'Comment', 'Tag', 'PostTag',
+           'PostCollection']
+
 
 # ========================================================
 # models =================================================
@@ -146,11 +153,25 @@ class PostTag(Base):
         self.tag = tag
 
 
+class PostCollection(Base):
+    """文章集合"""
+    __tablename__ = 'post_collection'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(64), index=True, nullable=False)
+
+
 class Post(ModelAPIMixin, Base):
+    """文章"""
     __tablename__ = 'post'
+    TYPES = (
+        ('origin', '原创'),
+        ('reproduce', "转载"),
+        ('translation', '翻译')
+    )
 
     id = Column(Integer, primary_key=True)
     title = Column(String(64), index=True, nullable=False)
+    type = Column(ChoiceType(TYPES))
     slug = Column(String(128), nullable=False)
     meta_description = Column(String(128))
     meta_keywords = Column(String(128))
@@ -160,6 +181,7 @@ class Post(ModelAPIMixin, Base):
     publish_time = Column(DateTime, default=datetime.now, index=True)
     image_id = Column(Integer, ForeignKey('image.id'))
     category_id = Column(Integer, ForeignKey('category.id'))
+    collection_id = Column(Integer, ForeignKey("post_collection.id"))
 
     post_tags = relationship(
         'PostTag',
@@ -178,14 +200,29 @@ class Post(ModelAPIMixin, Base):
                         cascade='all, delete-orphan'
                         ),
     )
+    collection = relationship(
+        'PostCollection',
+        backref='post_set'
+    )
 
-    __markdown_content = None
+    @hybrid_property
+    def sibling_posts(self):
+        """同一个集合内的其它post"""
+        if not self.collection:
+            return None
+        result = list(self.collection.post_set)
+        result.remove(self)
+        return result
 
+    _markdown_content = None
     @property
     def markdown_content(self):
         if not self.__markdown_content:
-            self.__markdown_content = markdown.markdown(self.content)
-        return self.__markdown_content
+            self.__markdown_content = markdown.markdown(
+                self.content,
+                ['extra', 'codehilite']
+            )
+        return self._markdown_content
 
     @staticmethod
     def get_published_post(session):
@@ -319,6 +356,7 @@ class Comment(ModelAPIMixin, Base):
     id = Column(Integer, primary_key=True)
     email = Column(String(64))
     title = Column(String(128))
+    remote_ip = Column(String(32))
     content = Column(Text)
     floor = Column(Integer)
     status = Column(Boolean, default=True)
@@ -332,6 +370,7 @@ class Comment(ModelAPIMixin, Base):
             'comment_set',
             order_by='Comment.floor',
             collection_class=ordering_list('floor', count_from=1),
+            cascade='all, delete-orphan'
         ),
     )
     # 回复的comment
@@ -341,4 +380,38 @@ class Comment(ModelAPIMixin, Base):
         backref=backref('reply', remote_side=id)
     )
 
+    _black_list_key = "_black_list:comment"     # 评论黑名单的redis set键
 
+    def avatar(self, size):
+        """评论者头像"""
+        email_md5 = hashlib.md5(self.email.lower().encode()).hexdigest()
+        return "https://www.gravatar.com/avatar/{0}?{1}".format(
+            email_md5, urlencode({'s': str(size)})
+        )
+
+    @staticmethod
+    def comment_restricted(remote_ip):
+        """根据对方IP决定是否评论受限
+
+
+        :param remote_ip: 评论者的IP
+        :return: bool，返回评论是否受限
+        """
+        # 判断是否开启评论限制
+        if SysConfig.get(**SysConfig.comment_limit_enable) is False:
+            return False
+
+        # 判断IP是否在黑名单中
+        if redis_cli.sismember(Comment._black_list_key, remote_ip):
+            return True
+
+        # 判断IP是否超过评论限制(1分钟内)，并加入到黑名单中
+        comment_key = "_num:comment:{ip}".format(ip=remote_ip)
+        redis_cli.incr(comment_key)
+        redis_cli.expire(comment_key, 60)
+        if (int(redis_cli.get(comment_key))
+                > SysConfig.get(**SysConfig.comment_limit)):
+            redis_cli.sadd(Comment._black_list_key, remote_ip)
+            return True
+
+        return False

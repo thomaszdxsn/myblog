@@ -50,6 +50,14 @@ class PostForm(Form):
         render_kw={"required": True},
         coerce=int
     )
+    type = SelectField(
+        "文章类型",
+        choices=[
+            ("origin", "原创"),
+            ("reproduce", "转载"),
+            ("translation", "翻译")
+        ]
+    )
     title = StringField(
         "文章标题",
         validators=[
@@ -111,10 +119,27 @@ class SysConfigForm(Form):
     )
     cache_expire = IntegerField(
         "缓存过期时间(单位:秒)",
+        validators=[DataRequired()]
     )
     session_expire = IntegerField(
         "session过期时间(单位:秒)",
         validators=[DataRequired()]
+    )
+    comment_limit_enable = BooleanField(
+        "是否开启评论限制",
+    )
+    comment_limit = IntegerField(
+        "评论限制数量(条/每分钟)",
+        validators=[DataRequired()]
+    )
+    template_code_skin = SelectField(
+        "代码块显示皮肤",
+        choices=[
+            ('sons-of-obsidian', 'sons-of-obsidian'),
+            ('sunburst', 'sunburst'),
+            ('doxy', 'doxy'),
+            ('desert', 'desert')
+        ]
     )
 
 

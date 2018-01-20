@@ -108,3 +108,15 @@ class BlogPostModelTestCase(ModelTestMixin, unittest.TestCase):
         self.db.commit()
         self.assertEqual(c1.floor, 1)
         self.assertEqual(c2.floor, 2)
+
+    def test_post_type_choices(self):
+        p1 = Post(title='post1', slug='post1')
+        p1.type = 'origin'
+        self.db.add(p1)
+        self.db.commit()
+
+        obj = self.db.query(Post).get(1)
+        self.assertEqual(obj.type.code, 'origin')
+        self.assertNotEqual(obj.type.value, 'origin')
+        self.assertEqual(obj.type.value, '原创')
+

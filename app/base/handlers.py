@@ -61,9 +61,11 @@ class BaseHandler(web.RequestHandler):
     @property
     def db(self):
         if self._db is None:
-            self._db = DBSession(bind=create_engine(self.config.SQLALCHEMY_URI,
-                                                    pool_size=500,
-                                                    pool_recycle=3600))
+            self._db = DBSession(bind=create_engine(
+                self.config.SQLALCHEMY_URI,
+                pool_size=self.config.SQLALCHEMY_POOL_SIZE,
+                pool_recycle=self.config.SQLALCHEMY_POOL_RECYCLE
+            ))
         return self._db
 
     @property
@@ -135,6 +137,10 @@ class BaseHandler(web.RequestHandler):
             template_version = SysConfig.get(**SysConfig.template_version)
             template_name = template_version + "/" + template_name
         super(BaseHandler, self).render(template_name, **kwargs)
+
+    @property
+    def json_body(self):
+        return json.loads(self.request.body)
 
 
 class ListAPIMixin(object):

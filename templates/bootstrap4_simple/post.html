@@ -23,50 +23,82 @@
 
   <!-- Comments Form -->
   <div class="card my-4">
-    <h5 class="card-header">Leave a Comment:</h5>
+    <h5 class="card-header">留下评论</h5>
     <div class="card-body">
-      <form>
+      <form method="POST">
+        {% for field in form %}
         <div class="form-group">
-          <textarea class="form-control" rows="3"></textarea>
+          {% raw field.label(class_='form-control-label') %}
+          {% raw field(class_="form-control") %}
+          {% if field.errors %}
+            <small class="form-text text-danger">{{ ", ".join(field.errors) }}</small>
+          {% end %}
         </div>
-        <button type="submit" class="btn btn-primary">Submit</button>
+        {% end %}
+        {% if errors %}
+            <small class="form-text text-danger">{{ errors }}</small>
+        {% end %}
+        <button type="submit" class="btn btn-primary">提交评论</button>
       </form>
     </div>
   </div>
 
-  <!-- Single Comment -->
-  <div class="media mb-4">
-    <img class="d-flex mr-3 rounded-circle" src="http://placehold.it/50x50" alt="">
-    <div class="media-body">
-      <h5 class="mt-0">Commenter Name</h5>
-      Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis. Fusce condimentum nunc ac nisi vulputate fringilla. Donec lacinia congue felis in faucibus.
-    </div>
-  </div>
+    {% if current_user %}
+      {% for comment_obj in post_obj.comment_set %}
+        {% if current_user.is_superuser %}
+        <div class="media mb-4">
+          <img class="d-flex mr-3 rounded-circle" src="{{ comment_obj.avatar(60) }}" alt="avatar">
+          <div class="media-body">
+            <h5 class="mt-0">
+              {{ comment_obj.title }}
 
-  <!-- Comment with nested comments -->
-  <div class="media mb-4">
-    <img class="d-flex mr-3 rounded-circle" src="http://placehold.it/50x50" alt="">
-    <div class="media-body">
-      <h5 class="mt-0">Commenter Name</h5>
-      Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis. Fusce condimentum nunc ac nisi vulputate fringilla. Donec lacinia congue felis in faucibus.
-
-      <div class="media mt-4">
-        <img class="d-flex mr-3 rounded-circle" src="http://placehold.it/50x50" alt="">
-        <div class="media-body">
-          <h5 class="mt-0">Commenter Name</h5>
-          Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis. Fusce condimentum nunc ac nisi vulputate fringilla. Donec lacinia congue felis in faucibus.
+              <span class="float-right">{{ comment_obj.floor }}楼</span>
+              {% if comment_obj.status is True %}
+                <button class="btn btn-sm btn-danger comment-close" data-id="{{ comment_obj.id }}">
+                  关闭评论
+                </button>
+              {% else %}
+                <button class="btn btn-sm btn-primary comment-open" data-id="{{ comment_obj.id }}">
+                  开启评论
+                </button>
+              {% end %}
+            </h5>
+            {{ comment_obj.content }}
+          </div>
         </div>
-      </div>
+        {% end %}
+      {% end %}
+    {% else %}
+      {% for comment_obj in post_obj.comment_set %}
+        {% if comment_obj.status is True %}
+          <div class="media mb-4">
+            <img class="d-flex mr-3 rounded-circle" src="{{ comment_obj.avatar(60) }}" alt="avatar">
+            <div class="media-body">
+              <h5 class="mt-0">
+                {{ comment_obj.title }}
+                <span class="float-right">{{ comment_obj.floor }}楼</span>
+              </h5>
+              {{ comment_obj.content }}
+            </div>
+          </div>
+        {% end %}
+      {% end %}
+    {% end %}
+{% end %}
 
-      <div class="media mt-4">
-        <img class="d-flex mr-3 rounded-circle" src="http://placehold.it/50x50" alt="">
-        <div class="media-body">
-          <h5 class="mt-0">Commenter Name</h5>
-          Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis. Fusce condimentum nunc ac nisi vulputate fringilla. Donec lacinia congue felis in faucibus.
-        </div>
-      </div>
+{% block js %}
+<script>
+$(".comment-close,.comment-open").on("click", function(e) {
+  let method = $(this).hasClass('comment-close') ? 'DELETE':'PUT';
+  let commentId = $(this).data('id');
 
-    </div>
-  </div>
-
+  $.ajax({
+    method: method,
+    url: window.location.href,
+    data: JSON.stringify({comment_id: commentId}),
+    success: window.location.reload(),
+    error: (data, error) => {alert(data, error);}
+  })
+})
+</script>
 {% end %}

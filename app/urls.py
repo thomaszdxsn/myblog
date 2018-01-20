@@ -12,17 +12,18 @@ urlpatterns = [
     (r"/", blog_handlers.HomepageHandler,
      {}, "homepage"),
     # 文章
-    (r"/(?P<slug>\w+)", blog_handlers.PostHandler,
+    (r"/(?P<year>\d+)/(?P<month>\d+)/(?P<day>\d+)/(?P<slug>\w+)",
+     blog_handlers.PostHandler,
      {}, "post"),
     
 
     # 后台页面
 
     # 后台登入/登出页面
-    (r'/fake-admin/login', admin_handlers.AdminLoginHandler,
-     {}, "admin:login"),
-    (r'/fake-admin/logout', admin_handlers.AdminLogoutHandler,
+    (r'/fake-bg-admin/logout', admin_handlers.AdminLogoutHandler,
      {}, "admin:logout"),
+    (r'/fake-bg-admin/login', admin_handlers.AdminLoginHandler,
+     {}, "admin:login"),
 
     # 后台文章分类管理
     (r"/fake-admin/category",

@@ -51,7 +51,7 @@
         <form method="post">
             {% for field in form %}
                 <div class="form-group">
-                  {% if field.name in ['cache_enable'] %}
+                  {% if field.name in ['cache_enable', 'comment_limit_enable'] %}
                     <div class="toggle-switch" data-ts-color="success">
                         <label for="ts4" class="ts-label">{{ field.label.text }}</label>
                         {% raw field %}

@@ -28,8 +28,9 @@ td, th {
                 <thead>
                 <tr>
                     <th>ID</th>
-                    <th>图片名称</th>
                     <th>图片</th>
+                    <th>图片名称</th>
+                    <th>URL</th>
                     <th>创建时间</th>
                     <th>修改时间</th>
                     <th>X</th>
@@ -39,16 +40,17 @@ td, th {
                     {% for obj in data['object_list'] %}
                     <tr>
                         <td>{{ obj.id }}</td>
-                        <td>
-                            <a href="{{ reverse_url('admin:image:detail', obj.id) }}">
-                            {{ obj.name }}
-                            </a>
-                        </td>
                         <td align="center">
                             <a href="{{ reverse_url('admin:image:detail', obj.id) }}">
                                 <img src="{{ obj.thumbnail(120, 120) }}">
                             </a>
                         </td>
+                        <td>
+                            <a href="{{ reverse_url('admin:image:detail', obj.id) }}">
+                            {{ obj.name }}
+                            </a>
+                        </td>
+                        <td>{{ obj.url }}</td>
                         <td>{{ obj.created_time }}</td>
                         <td>{{ obj.modified_time }}</td>
                         <td>

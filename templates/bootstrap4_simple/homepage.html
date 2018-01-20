@@ -4,13 +4,15 @@
 
 {% for post_obj in post_data['object_list'] %}
 <div class="card mb-4">
-  <a href="{{ reverse_url('post', post_obj.slug) }}">
+  <a href="{{ reverse_url('post', post_obj.publish_time.year,post_obj.publish_time.month, post_obj.publish_time.day, post_obj.slug) }}">
     <img class="card-img-top" src="{{ post_obj.image.thumbnail(750, 300) }}" alt="Post image">
   </a>
   <div class="card-body">
     <h2 class="card-title">{{ post_obj.title }}</h2>
     <p class="card-text">{{ post_obj.brief }}</p>
-    <a href="{{ reverse_url('post', post_obj.slug) }}" class="btn btn-primary">更多 &rarr;</a>
+    <a href="{{ reverse_url('post', post_obj.publish_time.year,post_obj.publish_time.month, post_obj.publish_time.day, post_obj.slug) }}"
+       class="btn btn-primary">更多 &rarr;
+    </a>
   </div>
   <div class="card-footer text-muted">
     <div class="row">
