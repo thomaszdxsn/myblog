@@ -37,7 +37,7 @@ class SysConfig(object):
     }
     template_version = {
         'key': "template_version",
-        'default': 'bootstrap4_simple',
+        'default': 'blog_startbootstrap',
         'desc': "模版版本"
     }
     template_code_skin = {

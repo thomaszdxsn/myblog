@@ -548,7 +548,7 @@ class SysConfigHandler(BaseHandler):
             SysConfig.set(key, value, type=type(value))
         # 清空缓存
         self.cache_client.flush_all()
-        self.redirect("admin:sys-config")
+        self.redirect(self.reverse_url("admin:sys-config"))
 
 
 class ImageListHandler(BaseHandler):
