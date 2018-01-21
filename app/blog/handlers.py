@@ -20,7 +20,7 @@ class HomepageHandler(BaseHandler):
         self._page_num = self.get_query_argument('page', 1)
         self._tag_id = self.get_query_argument('tag', None)
         self._category_id = self.get_query_argument('category', None)
-        self._archive_month = self.get_query_argument('month', None)
+        self._archive_month = self.get_query_argument('archive-date', None)
 
     def handle_object_list(self, object_list, page_num,
                            per_page, to_json=False):
@@ -56,11 +56,15 @@ class HomepageHandler(BaseHandler):
 
         :param post_data(dict):
 
-            博客文章信息: 包含已分页的文章对象列表，以及分页相关信息，倒序排列
+            博客文章信息: 字典。包含已分页的文章对象列表，以及分页相关信息，倒序排列
 
         :param category_data(ResultList):
 
             分类信息: 所有创建的文章分类对象列表
+
+        :param base_stats: dict
+
+            网站基础的统计信息
         """
         _post_obj_list = Post.get_published_post(self.db)
         post_data = self.handle_object_list(
@@ -71,13 +75,15 @@ class HomepageHandler(BaseHandler):
         tag_data = Tag.get_object_list(self.db, have_post=True)
         category_data = Category.get_object_list(self.db)
         archive_info = Post.get_archive_month(self.db)
+        base_stats = SiteStats.get_base_info(self.db)
         self.render(
             "homepage.html",
             post_data=post_data,
             category_data=category_data,
             archive_info=archive_info,
             tag_data=tag_data,
-            code_skin=SysConfig.get(**SysConfig.template_code_skin)
+            code_skin=SysConfig.get(**SysConfig.template_code_skin),
+            base_stats=base_stats
         )
 
 
@@ -100,6 +106,7 @@ class PostHandler(BaseHandler):
         tag_data = Tag.get_object_list(self.db, have_post=True)
         category_data = Category.get_object_list(self.db)
         archive_info = Post.get_archive_month(self.db)
+        base_stats = SiteStats.get_base_info(self.db)
         form = CommentForm()
         self.render(
             "post.html",
@@ -107,9 +114,10 @@ class PostHandler(BaseHandler):
             tag_data=tag_data,
             category_data=category_data,
             archive_info=archive_info,
-            form=form,
+            comment_form=form,
             errors=None,
-            code_skin=SysConfig.get(**SysConfig.template_code_skin)
+            code_skin=SysConfig.get(**SysConfig.template_code_skin),
+            base_stats=base_stats
         )
 
     def post(self, *args, **kwargs):
@@ -126,15 +134,17 @@ class PostHandler(BaseHandler):
             tag_data = Tag.get_object_list(self.db, have_post=True)
             category_data = Category.get_object_list(self.db)
             archive_info = Post.get_archive_month(self.db)
+            base_stats = SiteStats.get_base_info(self.db)
             return self.render(
                 "post.html",
                 post_obj=post_obj,
                 tag_data=tag_data,
                 category_data=category_data,
                 archive_info=archive_info,
-                form=form,
+                comment_form=form,
                 errors=None,
-                code_skin=SysConfig.get(**SysConfig.template_code_skin)
+                code_skin=SysConfig.get(**SysConfig.template_code_skin),
+                base_stats=base_stats
             )
 
         # 判断该IP是否收到评论限制
@@ -143,15 +153,17 @@ class PostHandler(BaseHandler):
             tag_data = Tag.get_object_list(self.db, have_post=True)
             category_data = Category.get_object_list(self.db)
             archive_info = Post.get_archive_month(self.db)
+            base_stats = SiteStats.get_base_info(self.db)
             return self.render(
                 "post.html",
                 post_obj=post_obj,
                 tag_data=tag_data,
                 category_data=category_data,
                 archive_info=archive_info,
-                form=form,
+                comment_form=form,
                 errors=errors,
-                code_skin=SysConfig.get(**SysConfig.template_code_skin)
+                code_skin=SysConfig.get(**SysConfig.template_code_skin),
+                base_stats=base_stats
             )
 
         # 创建评论
@@ -163,11 +175,16 @@ class PostHandler(BaseHandler):
             content=form.content.data,
             remote_ip=self.request.remote_ip,
             floor=floor,
-            post_id=post_obj.id,
-            code_skin=SysConfig.get(**SysConfig.template_code_skin)
+            post_id=post_obj.id
         )
 
-        self.redirect(self.reverse_url("post", slug))
+        self.redirect(self.reverse_url(
+            "post",
+            post_obj.publish_time.year,
+            post_obj.publish_time.month,
+            post_obj.publish_time.day,
+            post_obj.slug
+        ))
 
     def put(self, *args, **kwargs):
         """将评论转为"开启"状态"""

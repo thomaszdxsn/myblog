@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post_obj.title }}{% end %}
+
+{% block head %}
+<meta name="description" content="{{ post_obj.meta_description }}">
+<meta name="keywords" content="{{ post_obj.meta_keywords }}">
+<meta name="author" content="thomaszdxsn">
+{% end %}
+
+{% block content %}
+<img src="{{ post_obj.image.thumbnail(860, 320) }}" class="img-responsive">
+
+<section class="post">
+  <header class="entry-header">
+    <img class="entry-avatar" alt="Paul Laros" height="52" width="52" src="https://www.gravatar.com/avatar/9dd6f237b19ec57c622198f93630b5e4">
+    <h1 class="entry-title">{{ post_obj.title }}</h1>
+    <p class="entry-meta">
+      发布于:
+        <a class="entry-date" href="{{ reverse_url('homepage') }}?archive-date={{ post_obj.publish_time.strftime('%Y%m') }}">
+            {{ post_obj.publish_time.year }}年{{ post_obj.publish_time.month }}月{{ post_obj.publish_time.day }}日
+        </a>
+        |
+      阅读量: {{ post_obj.view_num }}
+        |
+      分类:
+        <a class="category"
+            href="{{ reverse_url('homepage') }}?category={{ post_obj.category.id }}">
+            {{ post_obj.category.name }}
+        </a>
+        |
+      标签:
+        {% for index, tag_obj in enumerate(post_obj.tags) %}
+            <a class="label {% if index % 2 ==0 %}label-danger{% else %}label-primary{% end %}"
+               href="{{ reverse_url('homepage') }}?tag={{ tag_obj.id }}">
+                {{ tag_obj.name }}
+            </a>&nbsp;
+        {% end %}
+    </p>
+  </header>
+  <div class="entry-description">
+    {% raw post_obj.markdown_content %}
+  </div>
+</section>
+
+<div class="comments">
+      <form method="POST">
+        {% for field in comment_form %}
+        <div class="form-group">
+          {% raw field.label(class_='form-control-label') %}
+          {% raw field(class_="form-control") %}
+          {% if field.errors %}
+            <small class="form-text text-danger">{{ ", ".join(field.errors) }}</small>
+          {% end %}
+        </div>
+        {% end %}
+        {% if errors %}
+            <small class="form-text text-danger">{{ errors }}</small>
+        {% end %}
+        <button type="submit" class="btn btn-primary">提交评论</button>
+      </form>
+
+    {% if current_user %}
+      {% for comment_obj in post_obj.comment_set %}
+        {% if current_user.is_superuser %}
+        <div class="media mb-4">
+          <img class="d-flex mr-3 rounded-circle" src="{{ comment_obj.avatar(60) }}" alt="avatar">
+          <div class="media-body">
+            <h5 class="mt-0">
+              {{ comment_obj.title }}
+
+              <span class="float-right">{{ comment_obj.floor }}楼</span>
+              {% if comment_obj.status is True %}
+                <button class="btn btn-sm btn-danger comment-close" data-id="{{ comment_obj.id }}">
+                  关闭评论
+                </button>
+              {% else %}
+                <button class="btn btn-sm btn-primary comment-open" data-id="{{ comment_obj.id }}">
+                  开启评论
+                </button>
+              {% end %}
+            </h5>
+            {{ comment_obj.content }}
+          </div>
+        </div>
+        {% end %}
+      {% end %}
+    {% else %}
+      {% for comment_obj in post_obj.comment_set %}
+        {% if comment_obj.status is True %}
+          <div class="media mb-4">
+            <img class="d-flex mr-3 rounded-circle" src="{{ comment_obj.avatar(60) }}" alt="avatar">
+            <div class="media-body">
+              <h5 class="mt-0">
+                {{ comment_obj.title }}
+                <span class="float-right">{{ comment_obj.floor }}楼</span>
+              </h5>
+              {{ comment_obj.content }}
+            </div>
+          </div>
+        {% end %}
+      {% end %}
+    {% end %}
+</div>
+{% end %}
+
+{% block js %}
+<script>
+$(".comment-close,.comment-open").on("click", function(e) {
+  let method = $(this).hasClass('comment-close') ? 'DELETE':'PUT';
+  let commentId = $(this).data('id');
+
+  $.ajax({
+    method: method,
+    url: window.location.href,
+    data: JSON.stringify({comment_id: commentId}),
+    success: window.location.reload(),
+    error: (data, error) => {alert(data, error);}
+  })
+})
+</script>
+{% end %}

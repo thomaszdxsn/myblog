@@ -232,7 +232,7 @@ class Post(ModelAPIMixin, Base):
         if not self._markdown_content:
             self._markdown_content = markdown.markdown(
                 self.content,
-                ['extra']
+                ['extra', 'toc']
             )
         return self._markdown_content
 
@@ -392,7 +392,7 @@ class Comment(ModelAPIMixin, Base):
         backref=backref('reply', remote_side=id)
     )
 
-    _black_list_key = "_black_list:comment"     # 评论黑名单的redis set键
+    _black_list_key = "_blacklist:comment"     # 评论黑名单的redis set键
 
     def avatar(self, size):
         """评论者头像"""

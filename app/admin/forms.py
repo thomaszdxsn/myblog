@@ -104,10 +104,28 @@ class PostForm(Form):
     )
 
 
+class ImageForm(Form):
+    image = FileField(
+        "图片"
+    )
+
+
 class SysConfigForm(Form):
     template_version = SelectField(
         "模版版本",
-        choices=[('bootstrap4_simple', 'bootstrap4简单版本')]
+        choices=[
+            ('blog_startbootstrap', 'startbootstrap'),
+            ('blog_von', "von")
+        ]
+    )
+    template_code_skin = SelectField(
+        "代码块皮肤",
+        choices=[
+            ('sons-of-obsidian', 'sons-of-obsidian'),
+            ('sunburst', 'sunburst'),
+            ('doxy', 'doxy'),
+            ('desert', 'desert')
+        ]
     )
     per_page = IntegerField(
         "分页时每页的条目数量(后台和API)",
@@ -135,14 +153,7 @@ class SysConfigForm(Form):
         "评论限制数量(条/每分钟)",
         validators=[DataRequired()]
     )
-    template_code_skin = SelectField(
-        "代码块显示皮肤",
-        choices=[
-            ('sons-of-obsidian', 'sons-of-obsidian'),
-            ('sunburst', 'sunburst'),
-            ('doxy', 'doxy'),
-            ('desert', 'desert')
-        ]
-    )
+
+
 
 

@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container">
 <div class="card">
-    <div class="card-header bg-light">创建新文章</div>
+    <div class="card-header bg-light">创建新图片</div>
     <div class="card-body">
         <form method="post" enctype="multipart/form-data">
             {% for field in form %}
@@ -29,7 +29,7 @@
                 {% end %}
                 <button type="submit" class="btn btn-primary">保存</button>
                 <a class="btn btn-danger"
-                    href="{{ reverse_url('admin:post:list') }}">
+                    href="{{ reverse_url('admin:image:list') }}">
                     取消
                 </a>
             </div>

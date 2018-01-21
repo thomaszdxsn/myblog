@@ -30,7 +30,7 @@ td, th {
                     <th>ID</th>
                     <th>图片</th>
                     <th>图片名称</th>
-                    <th>URL</th>
+                    <th>100x100缩略图URL</th>
                     <th>创建时间</th>
                     <th>修改时间</th>
                     <th>X</th>
@@ -50,7 +50,7 @@ td, th {
                             {{ obj.name }}
                             </a>
                         </td>
-                        <td>{{ obj.url }}</td>
+                        <td>{{ obj.thumbnail(100, 100) }}</td>
                         <td>{{ obj.created_time }}</td>
                         <td>{{ obj.modified_time }}</td>
                         <td>

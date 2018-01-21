@@ -7,6 +7,7 @@ from io import BytesIO
 from tornado import web, gen
 
 from .forms import LoginForm, CategoryForm, PostForm, SysConfigForm
+from .forms import ImageForm
 from ..base.handlers import BaseHandler
 from ..libs.utils import aggregate_errors
 from ..libs.cloud import QiniuClient
@@ -356,6 +357,8 @@ class PostDetailHandler(BaseHandler):
                                     for obj in category_list]
         if obj.collection:
             form.collection.data = obj.collection.name
+        if obj.tags:
+            form.tags.data = ",".join(tag.name for tag in obj.tags)
 
         self.render(
             "admin/post/edit.html",
@@ -577,12 +580,58 @@ class ImageCreateHandler(BaseHandler):
 
     @web.authenticated
     def get(self, *args, **kwargs):
-        pass
+        form = ImageForm()
+        self.render(
+            "admin/image/create.html",
+            section=self._section,
+            form=form,
+            errors=None
+        )
 
     @gen.coroutine
     @web.authenticated
     def post(self, *args, **kwargs):
-        pass
+        form = ImageForm(self.request.arguments)
+        file_info = self.request.files['image'][0]
+        if 'image' not in file_info['content_type']:
+            error_string = '图片: 格式不正确，请传入正确的图片格式'
+            return self.render(
+                "admin/image/create.html",
+                section=self._section,
+                form=form,
+                errors=error_string,
+            )
+
+        # 上传图片
+        image_key = str(uuid.uuid4())
+        file_io = BytesIO(file_info['body'])
+        qiniu_client = QiniuClient(
+            self.config.QINIU_ACCESS_KEY,
+            self.config.QINIU_SECRET_KEY,
+            self.config.QINIU_BUCKET_NAME
+        )
+        # 使用线程池进行非堵塞上传
+        upload_result = yield self.thread_pool.submit(
+            qiniu_client.upload_file, image_key, file_io
+        )
+        if upload_result['error'] is True:
+            error_string = '图片上传失败'
+            self.application.logger.error(
+                "图片上传失败：{}".format(upload_result['exception'])
+            )
+            return self.render(
+                "admin/image/create.html",
+                section=self._section,
+                form=form,
+                errors=error_string,
+            )
+        image_obj = Image.create(
+            self.db,
+            key=image_key,
+            name=file_info['filename'],
+            url=urljoin(self.config.QINIU_DOMAIN, image_key)
+        )
+        self.redirect(self.reverse_url("admin:image:list"))
 
 
 class ImageDetailHandler(BaseHandler):

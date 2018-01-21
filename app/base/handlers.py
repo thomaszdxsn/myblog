@@ -19,15 +19,18 @@ from ..models.base import redis_cli
 from ..models.sys_config import SysConfig
 from ..session import Session
 
+thread_pool = futures.ThreadPoolExecutor()
+process_pool = futures.ProcessPoolExecutor()
+
 
 class BaseHandler(web.RequestHandler):
     """Handler的基类"""
     _db = None
     _redis_cli = None
     _session = None
-    _thread_pool = None
-    _process_pool = None
     _cache_client = None
+    thread_pool = thread_pool
+    process_pool = process_pool
 
     @property
     def cache_client(self):
@@ -39,18 +42,6 @@ class BaseHandler(web.RequestHandler):
             except KeyError:
                 raise KeyError("Not provide cache middleware")
         return self._cache_client
-
-    @property
-    def thread_pool(self):
-        if self._thread_pool is None:
-            self._thread_pool = futures.ThreadPoolExecutor()
-        return self._thread_pool
-
-    @property
-    def process_pool(self):
-        if self._process_pool is None:
-            self._process_pool = futures.ProcessPoolExecutor()
-        return self._process_pool
 
     @property
     def session(self):
@@ -76,6 +67,10 @@ class BaseHandler(web.RequestHandler):
 
     def get_current_user(self):
         if self.session.user_id:
+            # 更换IP以后，SESSION-ID失效
+            if self.session.remote_ip != self.request.remote_ip:
+                self.session.logout()
+                return None
             self.session.init_session()         # 保持登入状态
             return User.get_object_by_id(self.db,
                                          self.session.user_id)
@@ -128,7 +123,7 @@ class BaseHandler(web.RequestHandler):
             "total_pages": page.paginator.total_pages,
             "has_prev": page.has_previous(),
             "has_next": page.has_next(),
-            "current_page": page_num
+            "current_page": int(page_num)
         }
     
     def render(self, template_name, **kwargs):

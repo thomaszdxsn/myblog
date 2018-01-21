@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Thomaszdxsn's Blog{% end %}
+
+{% block head %}
+<meta name="description" content="thomaszdxsn's blog">
+<meta name="author" content="thomaszdxsn">
+{% end %}
+
+{% block content %}
+    {% for post_obj in post_data['object_list'] %}
+      <section class="post">
+          <header class="entry-header">
+            <img class="entry-avatar" alt="Thomaszdxsn" height="52" width="52" src="https://www.gravatar.com/avatar/9dd6f237b19ec57c622198f93630b5e4">
+            <h2 class="entry-title">
+                <a href="{{ reverse_url('post', post_obj.publish_time.year, post_obj.publish_time.month, post_obj.publish_time.day, post_obj.slug) }}">
+                    {{ post_obj.title }}
+                </a>
+            </h2>
+            <p class="entry-meta">
+              发布于:
+                <a class="entry-date" href="{{ reverse_url('homepage') }}?archive-date={{ post_obj.publish_time.strftime('%Y%m') }}">
+                    {{ post_obj.publish_time.year }}年{{ post_obj.publish_time.month }}月{{ post_obj.publish_time.day }}日
+                </a>
+                |
+              阅读量: {{ post_obj.view_num }}
+                |
+              分类:
+                <a class="category"
+                    href="{{ reverse_url('homepage') }}?category={{ post_obj.category.id }}">
+                    {{ post_obj.category.name }}
+                </a>
+                |
+              标签:
+                {% for index, tag_obj in enumerate(post_obj.tags) %}
+                    <a class="label {% if index % 2 ==0 %}label-danger{% else %}label-primary{% end %}"
+                       href="{{ reverse_url('homepage') }}?tag={{ tag_obj.id }}">
+                        {{ tag_obj.name }}
+                    </a>&nbsp;
+                {% end %}
+            </p>
+          </header>
+          <div class="entry-description">
+            <p>
+                {{ post_obj.brief }}...
+            </p>
+          </div>
+      </section> <!-- /.post -->
+    {% end %}
+
+    <nav aria-label="...">
+      <ul class="pager">
+        {% if post_data['has_prev'] %}
+            <li class="previous">
+                <a href="{{ reverse_url('homepage') }}?page={{ post_data['current_page'] - 1}}"><span aria-hidden="true">&larr;</span> Older</a>
+            </li>
+        {% end %}
+        {% if post_data['has_next'] %}
+            <li class="next">
+                <a href="{{ reverse_url('homepage') }}?page={{ post_data['current_page'] + 1}}">Newer <span aria-hidden="true">&rarr;</span></a>
+            </li>
+        {% end %}
+      </ul>
+    </nav>
+{% end %}

@@ -78,8 +78,8 @@ class CacheMiddleware(BaseMiddleware):
             # 注意，使用`.finish()`以后这个handler的生命周期就结束了
             # 所以缓存中间件一般应该放在中间件列表的最后位置
             if cache_content is not None:
-                if cache_content.startswith('{') \
-                        and cache_content.endswith('}'):
+                if (cache_content.startswith('{')
+                        and cache_content.endswith('}')):
                     self.handler.set_header(
                         "Content-Type",
                         "application/json; charset=UTF-8"

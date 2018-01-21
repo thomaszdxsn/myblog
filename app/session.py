@@ -28,6 +28,11 @@ class Session(object):
             self._handler.set_header('Session-ID', self._id)
         # 设置延期时间
         self._redis.hset(self._id, 'last_active', time.time())
+        # 设置用户IP
+        if self._redis.hget(self._id, "remote_ip") is None:
+            self._redis.hset(self._id,
+                             "remote_ip",
+                             self._handler.request.remote_ip)
         self._redis.expire(
             self._id,
             SysConfig.get(**SysConfig.session_expire)

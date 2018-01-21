@@ -4,7 +4,11 @@ import datetime
 
 import arrow
 
+from sqlalchemy import func, bindparam
+
 from .base import redis_cli
+from .base import sql_bakery
+from .post import Post, Comment
 from ..libs.utils import get_next_weekday
 
 
@@ -23,6 +27,73 @@ class SiteStats(object):
     def generate_key(cls, key):
         """生成加入前缀的KEY"""
         return "{0}:{1}".format(cls._prefix, key)
+
+    @classmethod
+    def get_base_info(cls, session):
+        """返回基本的统计信息，用于首页显示
+
+        :return:
+
+            - pv: 总pv数据
+            - pv_today: 今天的pv数据
+            - uv: 总uv数据
+            - uv_today: 今天的uv数据
+            - post_count: 总博客数量(状态为True)
+            - post_origin_count: 原创类型博客数量
+            - post_reproduce_count: 转载类型博客数量
+            - post_translation_count: 翻译类型博客数量
+            - comment_count: 评论数量
+        """
+        # post总数
+        post_count_sql = sql_bakery(lambda session: session.query(
+            func.count(Post.id)
+        ).filter(
+            Post.status == True
+        ))
+        post_count = post_count_sql(session).scalar()
+
+        post_count_sql += lambda q: q.filter(
+            Post.type == bindparam("type")
+        )
+        # 转载数量
+        post_reproduce_count = post_count_sql(
+            session
+        ).params(
+            type='reproduce'
+        ).scalar()
+        # 原创数量
+        post_origin_count = post_count_sql(
+            session
+        ).params(
+            type='origin'
+        ).scalar()
+        # 翻译数量
+        post_translation_count = post_count_sql(
+            session
+        ).params(
+            type='translation'
+        ).scalar()
+
+        # 评论数量
+        comment_count_sql = sql_bakery(lambda session: session.query(
+            func.count(Comment.id)
+        ).filter(
+            Comment.status == True
+        ))
+        comment_count = comment_count_sql(session).scalar()
+
+        today = datetime.date.today()
+        return {
+            "pv": cls.get_pv(),
+            "pv_today": cls.get_pv(today),
+            "uv": cls.get_uv(),
+            "uv_today": cls.get_uv(today),
+            "post_count": post_count,
+            "post_reproduce_count": post_reproduce_count,
+            "post_origin_count": post_origin_count,
+            "post_translation_count": post_translation_count,
+            "comment_count": comment_count
+        }
 
     @classmethod
     def incr_post_view(cls, slug):
@@ -92,10 +163,12 @@ class SiteStats(object):
         if date is None:
             redis_key = cls.pv_amount
         else:
-            redis_key = cls.pv_day.format(str(date))
+            redis_key = cls.pv_day.format(day=str(date))
 
         value = redis_cli.get(redis_key)
-        return value
+        if value is None:
+            return 0
+        return int(value)
 
     @classmethod
     def incr_uv(cls, ip):
@@ -112,6 +185,30 @@ class SiteStats(object):
             redis_cli.incr(day_uv_key, 1)
         if not redis_cli.sismember(cls.access_ip, ip):
             redis_cli.incr(cls.uv_amount, 1)
+
+    @classmethod
+    def get_uv(cls, date=None):
+        """获取pv数据
+
+        :param date:
+
+            date对象，或者"%Y-%m-%d"格式的字符串
+
+            可选。如果提供了，则返回改天的uv数据
+
+        :return:
+
+            uv数据，或者None
+        """
+        if date is None:
+            redis_key = cls.uv_amount
+        else:
+            redis_key = cls.uv_day.format(day=str(date))
+
+        value = redis_cli.get(redis_key)
+        if value is None:
+            return 0
+        return int(value)
 
     @classmethod
     def save_access_ua(cls, ua, ip):

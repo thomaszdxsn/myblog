@@ -34,7 +34,7 @@
     <h5 class="card-header">留下评论</h5>
     <div class="card-body">
       <form method="POST">
-        {% for field in form %}
+        {% for field in comment_form %}
         <div class="form-group">
           {% raw field.label(class_='form-control-label') %}
           {% raw field(class_="form-control") %}

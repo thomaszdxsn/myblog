@@ -9,10 +9,10 @@
     <title>{% block title %}{% end %}</title>
 
     <!-- Bootstrap core CSS -->
-    <link href="{{ static_url('bootstrap4_simple/vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ static_url('blog_startbootstrap/vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
 
     <!-- Custom styles for this template -->
-    <link href="{{ static_url('bootstrap4_simple/css/blog-home.css') }}" rel="stylesheet">
+    <link href="{{ static_url('blog_startbootstrap/css/blog-home.css') }}" rel="stylesheet">
 
     <!--Code highlight(prettify.css)-->
     <link rel="stylesheet" type="text/css" href="{{ static_url('code-prettify/skins/{0}.css'.format(code_skin)) }}">
@@ -33,28 +33,10 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
       <div class="container">
-        <a class="navbar-brand" href="#">Start Bootstrap</a>
+        <a class="navbar-brand" href="{{ reverse_url('homepage') }}">Thomaszdxsn's Blog</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="collapse navbar-collapse" id="navbarResponsive">
-          <ul class="navbar-nav ml-auto">
-            <li class="nav-item active">
-              <a class="nav-link" href="#">Home
-                <span class="sr-only">(current)</span>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">About</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Services</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Contact</a>
-            </li>
-          </ul>
-        </div>
       </div>
     </nav>
 
@@ -68,8 +50,28 @@
 
           <!-- Info Widget -->
           <div class="card my-4">
-            统计信息
+            <h5 class="card-header">统计信息</h5>
+            <div class="card-body">
+              <p>
+                  <span class="col-6">总PV: <span class="label">{{ base_stats['pv'] }}</span></span>
+                  <span class="col-6">今日PV: <span class="label">{{ base_stats['pv_today'] }}</span></span>
+              </p>
+              <p>
+                  <span class="col-6">总UV: <span class="label">{{ base_stats['uv'] }}</span></span>
+                  <span class="col-6">今日UV: <span class="label">{{ base_stats['uv_today'] }}</span></span>
+              </p>
+              <p>
+                  <span class="col-6">博文总数: <span class="label">{{ base_stats['post_count'] }}</span></span>
+                  <span class="col-6">评论总数: <span class="label">{{ base_stats['comment_count'] }}</span></span>
+              </p>
+              <p>
+                  <span class="col-3">原创: <span class="label">{{ base_stats['post_origin_count'] }}</span></span>
+                  <span class="col-3">转载: <span class="label">{{ base_stats['post_reproduce_count'] }}</span></span>
+                  <span class="col-3">翻译: <span class="label">{{ base_stats['post_translation_count'] }}</span></span>
+              </p>
+            </div>
           </div>
+
 
           <!-- Tag Widget -->
           <div class="card my-4">
@@ -128,7 +130,7 @@
                         <ul class="list-unstyled mb-0">
                    {% end %}
                       <li>
-                          <a href="{{ reverse_url('homepage') }}?month={{ archive_tuple[0].strftime('%Y%m') }}">
+                          <a href="{{ reverse_url('homepage') }}?archive-date={{ archive_tuple[0].strftime('%Y%m') }}">
                           {{ archive_tuple[0].year }}年{{ archive_tuple[0].month }}月({{ archive_tuple[1] }})
                           </a>
                       </li>
@@ -149,14 +151,33 @@
     <!-- Footer -->
     <footer class="py-5 bg-dark col-12">
       <div class="container">
-        <p class="m-0 text-center text-white">Copyright &copy; Thomaszdxsn's Blog</p>
+            <p class="m-0 text-white text-center">
+                Copyright &copy; 2018 Thomaszdxsn
+            </p>
+            <p class="m-0 text-white text-center">
+                Powered By
+
+                <a href="http://www.tornadoweb.org/en/stable/" target="_blank">Tornado</a>
+                |
+                <a href="http://www.sqlalchemy.org/" target="_blank">SQLAlchemy</a>
+                |
+                <a href="https://redis.io/" target="_blank">Redis</a>
+                |
+                <a href="http://www.celeryproject.org/" target="_blank">Celery</a>
+                |
+                <a href="https://getbootstrap.com" target="_blank">Bootstrap</a>
+                |
+                <a href="https://jquery.com" target="_blank">jQuery</a>
+            </p>
+
+        </div>
       </div>
       <!-- /.container -->
     </footer>
 
     <!-- Bootstrap core JavaScript -->
-    <script src="{{ static_url('bootstrap4_simple/vendor/jquery/jquery.min.js') }}"></script>
-    <script src="{{ static_url('bootstrap4_simple/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ static_url('blog_startbootstrap/vendor/jquery/jquery.min.js') }}"></script>
+    <script src="{{ static_url('blog_startbootstrap/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script>
         $('pre').addClass('prettyprint linenums');
     </script>

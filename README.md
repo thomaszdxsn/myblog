@@ -1,6 +1,29 @@
 # myblog
 
 
+## 模版版本
+
+本博客开发了若干套模版版本，大多是借鉴自其它博客：
+
+- blog_von
+
+    ![sample-1](http://p2gg7csfl.bkt.clouddn.com/ed52361a-2b12-4509-b832-49f013b6d6cc?imageMogr2/thumbnail/600x400)
+
+    ![sample-2](http://p2gg7csfl.bkt.clouddn.com/d06c3ca8-d960-4307-bfcc-de6a109554ff?imageMogr2/thumbnail/600x400)
+
+    ![sample-3](http://p2gg7csfl.bkt.clouddn.com/ed52361a-2b12-4509-b832-49f013b6d6cc?imageMogr2/thumbnail/600x400)
+
+    这是一个极简风格的博客，借鉴自[von](http://paullaros.nl/von/)。原来的模版需要收费。
+
+
+- blog_startbootstrap
+
+    ![sample-1](http://p2gg7csfl.bkt.clouddn.com/5fb7cec6-5431-4e1e-bd82-d764e370a4eb?imageMogr2/thumbnail/600x400)
+
+    简单的bootstrap4主题，借鉴自[startbootstrap](https://startbootstrap.com/template-overviews/blog-post/)，
+    是该网站免费分享的一个bootstrap blog模版。
+
+
 ## 开发日志
 
 - 2018-1-20

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-COMPATIBLE" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% end %}</title>
+
+    <!-- Normal CSS -->
+    <link href="{{ static_url('blog_von/font1.css') }}" rel="stylesheet">
+    <link href="{{ static_url('blog_von/font2.css') }}" rel="stylesheet">
+    <!-- Bootstrap core CSS -->
+    <link href="{{ static_url('blog_von/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ static_url('blog_von/font-awesome.min.css') }}" rel="stylesheet">
+    <link href="{{ static_url('blog_von/bootstrap-social.css') }}" rel="stylesheet">
+    <!-- Styles -->
+    <link href="{{ static_url('blog_von/main.css') }}" rel="stylesheet">
+    <!-- Loading bar -->
+    <script src="{{ static_url('blog_von/pace.min.js') }}"></script>
+    <!--Code highlight(prettify.css)-->
+    <link rel="stylesheet" type="text/css" href="{{ static_url('code-prettify/skins/{0}.css'.format(code_skin)) }}">
+    <style>
+        li.L0, li.L1, li.L2, li.L3,
+        li.L5, li.L6, li.L7, li.L8 {
+          list-style-type: decimal !important;
+        }
+    </style>
+    <script type="text/javascript" src="{{ static_url('code-prettify/prettify.js') }}"></script>
+    {% block head %}{% end %}
+</head>
+<body class="pace-done" onload="PR.prettyPrint()">
+
+  <div class="pace  pace-inactive">
+    <div class="pace-progress" data-progress-text="100%" data-progress="99" style="width: 100%;">
+      <div class="pace-progress-inner"></div>
+    </div>
+    <div class="pace-activity"></div>
+  </div>
+
+  <div id="secondary" class="col-sm-3 sidebar" style="display: none;">
+      <aside>
+        <div class="about">
+          <h4>About us</h4>
+          <p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.</p>
+        </div>
+        <div class="tags">
+          <h4>Tags</h4>
+          {% block tags %}
+            <ul>
+                {% for index, tag_obj in enumerate(tag_data) %}
+                <li style="padding-top: 10px;">
+                    <a href="?tag={{ tag_obj.id }}"
+                       class="label {% if index % 2 ==0 %}label-danger{% else %}label-primary{% end %}">
+                        {{ tag_obj.name }}
+                    </a>
+                </li>
+                {% end %}
+            </ul>
+          {% end %}
+        </div>
+      </aside>
+  </div> <!-- /#secondary -->
+
+  <div id="primary" class="col-sm-12">
+      <div class="content">
+
+        <header class="header">
+          <hgroup class="pull-left">
+            <h1 class="site-title">
+              <a rel="home" title="Von" href="{{ reverse_url('homepage') }}">
+                <i class="fa fa-lemon-o"></i> Thomaszdxsn
+              </a>
+            </h1>
+          </hgroup>
+          <div id="togglesidebar" class="btn btn-primary pull-right">
+            <i class="fa fa-bars"></i>
+          </div>
+        </header> <!-- /header -->
+
+        {% block content %}{% end %}
+
+        <footer class="footer">
+          <p>© Von 2013. All right reserved.</p>
+        </footer> <!-- /footer -->
+
+      </div>
+    </div> <!-- /#primary -->
+
+
+
+
+  <!-- JavsScript Script -->
+  <script src="{{ static_url('blog_von/jquery-1.11.0.min.js') }}"></script>
+  <script src="{{ static_url('blog_von/custom.js') }}"></script>
+  <script>
+        $('pre').addClass('prettyprint linenums');
+  </script>
+</body>
+</html>
