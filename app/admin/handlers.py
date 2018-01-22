@@ -303,17 +303,7 @@ class PostCreateHandler(BaseHandler):
             )
             form.image.data = image_obj  # 共享一个变量，可以应对没有上传图片的情况
 
-        # 处理文章集合
-        if form.collection.data:
-            collection = PostCollection.get_object_by_name(
-                form.collection.data, self.db
-            )
-            if not collection:
-                collection = PostCollection.create(
-                    self.db,
-                    name=form.collection.data
-                )
-            form.collection.data = collection
+
         post_obj = Post.create(
             self.db,
             category_id=form.category_id.data,
@@ -326,8 +316,19 @@ class PostCreateHandler(BaseHandler):
             publish_time=form.publish_time.data,
             content=form.content.data,
             type=form.type.data,
-            collection=form.collection.data
         )
+        # 处理文章集合
+        if form.collection.data:
+            collection = PostCollection.get_object_by_name(
+                form.collection.data, self.db
+            )
+            if collection:
+                collection = PostCollection.create(
+                    self.db,
+                    name=form.collection.data
+                )
+            post_obj.collection = collection
+
         # 处理标签
         tags = Tag.create_by_string(self.db, form.tags.data)
         if tags:
