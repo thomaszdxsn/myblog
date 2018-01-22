@@ -77,3 +77,4 @@ config.py
 
 # qiniu cache
 .qiniu_pythonsdk_hostscache.json
+celerybeat*
