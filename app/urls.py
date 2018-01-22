@@ -12,7 +12,7 @@ urlpatterns = [
     (r"/", blog_handlers.HomepageHandler,
      {}, "homepage"),
     # 文章
-    (r"/(?P<year>\d+)/(?P<month>\d+)/(?P<day>\d+)/(?P<slug>\w+)",
+    (r"/(?P<year>\d+)/(?P<month>\d+)/(?P<day>\d+)/(?P<slug>[\w-]+)",
      blog_handlers.PostHandler,
      {}, "post"),
     
