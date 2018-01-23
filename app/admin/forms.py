@@ -115,7 +115,7 @@ class SysConfigForm(Form):
         "模版版本",
         choices=[
             ('blog_startbootstrap', 'startbootstrap'),
-            ('blog_von', "von")
+            ('blog_von', "von"),
         ]
     )
     template_code_skin = SelectField(

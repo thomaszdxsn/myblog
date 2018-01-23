@@ -232,7 +232,7 @@ class Post(ModelAPIMixin, Base):
         if not self._markdown_content:
             self._markdown_content = markdown.markdown(
                 self.content,
-                ['extra', 'toc']
+                ['extra', 'toc', 'markdown.extensions.tables']
             )
         return self._markdown_content
 
