@@ -25,7 +25,7 @@ sqlacodegen==1.1.6
 SQLAlchemy==1.1.15
 SQLAlchemy-Utils==0.32.21
 tornado==4.5.2
-urllib3==1.22
+urllib3==1.24.2
 vine==1.1.4
 WTForms==2.1
 wtforms-tornado==0.0.2
